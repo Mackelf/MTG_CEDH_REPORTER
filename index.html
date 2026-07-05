@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commander Dashboard - Home y Metagame</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/vue-router@4"></script>
+  <style>
+    :root{
+      --bg:#111827;--panel:#1f2937;--panel-2:#0f172a;--line:#334155;--text:#e5e7eb;--muted:#94a3b8;--brand:#38bdf8;--brand-2:#22c55e;--gold:#facc15;
+    }
+    *{box-sizing:border-box}
+    body{background:linear-gradient(180deg,#0b1120 0%, #111827 100%);color:var(--text);min-height:100vh}
+    a{text-decoration:none}
+    .app-footer{padding:20px;text-align:center;color:var(--muted);font-size:.9rem}
+    .home-container,.main-container{max-width:1200px;margin:0 auto;padding:24px}
+    .home-card,.panel-card,.meta-card,.standing-card,.event-card{background:rgba(31,41,55,.92);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+    .home-card{padding:24px}
+    .home-title{font-size:2rem;font-weight:800;margin-bottom:6px}
+    .home-subtitle{color:var(--muted);margin-bottom:20px}
+    .stores-list{display:grid;gap:18px}
+    .store-group{background:rgba(15,23,42,.6);border:1px solid #263245;border-radius:18px;padding:18px}
+    .store-button{display:flex;align-items:center;gap:10px;border-radius:999px;padding:12px 16px;background:linear-gradient(135deg,#1d4ed8,#0f766e);color:#fff;font-weight:700;width:max-content;margin-bottom:14px}
+    .store-dates{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+    .store-dates li{background:rgba(17,24,39,.7);border:1px solid #243041;border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .store-datemeta{color:var(--muted);font-size:.92rem}
+    .layout-header{background:linear-gradient(135deg,#1e3a8a 0%, #0f766e 100%);border-bottom:1px solid rgba(255,255,255,.08)}
+    .layout-header-inner{max-width:1200px;margin:0 auto;padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+    .layout-title{font-size:1.8rem;font-weight:800;line-height:1.1}
+    .layout-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .nav-pills-wrap{background:var(--panel-2);border-bottom:1px solid var(--line)}
+    .nav-pills-inner{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+    .view-tabs{display:flex;gap:10px;flex-wrap:wrap}
+    .view-tab{border:1px solid #3b4d66;background:transparent;color:var(--text);padding:10px 14px;border-radius:999px;font-weight:600}
+    .router-link-active.view-tab{background:var(--brand);border-color:var(--brand);color:#082f49}
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+    .meta-grid,.metagame-grid,.standings-grid{display:grid;gap:14px}
+    .meta-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:18px}
+    .metagame-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .standings-grid{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+    .panel-card{padding:18px}
+    .meta-card,.standing-card{padding:18px}
+    .metric-label{color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;margin-bottom:8px}
+    .metric-value{font-size:2rem;font-weight:800;line-height:1}
+    .panel-title{font-size:1.35rem;font-weight:800;margin-bottom:4px}
+    .panel-subtitle{color:var(--muted);margin-bottom:16px}
+    .commander-name,.player-name{font-size:1.15rem;font-weight:800;line-height:1.2}
+    .meta-stat-line,.standing-line{font-size:.95rem;color:var(--muted);display:grid;gap:4px}
+    .rank-pill,.share-pill,.badge-soft{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:.78rem;font-weight:700;width:max-content}
+    .rank-pill{background:rgba(250,204,21,.14);color:var(--gold)}
+    .share-pill{background:rgba(56,189,248,.14);color:var(--brand)}
+    .badge-soft{background:rgba(34,197,94,.14);color:#86efac}
+    .decklist-box{background:#0f172a;border:1px solid #243041;border-radius:12px;padding:12px;color:#cbd5e1;font-size:.8rem;white-space:pre-wrap;max-height:220px;overflow:auto}
+    .search-box{max-width:320px}
+    .empty-state{padding:28px;border:1px dashed #3b4d66;border-radius:18px;background:rgba(15,23,42,.45)}
+    .btn-outline-light{border-width:2px}
+    .tiny{font-size:.82rem;color:var(--muted)}
+    code{color:#93c5fd}
+    @media (max-width: 900px){.kpi-grid,.meta-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width: 640px){.home-container,.main-container,.layout-header-inner,.nav-pills-inner{padding:16px}.kpi-grid,.meta-grid,.metagame-grid,.standings-grid{grid-template-columns:1fr}.home-title,.layout-title{font-size:1.5rem}}
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <footer class="app-footer">Mario Canto · 2026 · Dashboard Commander · Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener noreferrer">TopDeck.gg</a></footer>
+
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+    const { createRouter, createWebHashHistory, RouterLink, RouterView, useRoute } = VueRouter;
+
+    const API_CONFIG = {
+      apiBase: 'https://topdeck.gg/api',
+      apiKey: '9ce0ad59-1c79-41de-aff0-7443f6d028c3'
+    };
+
+    const store = Vue.reactive({
+      events: [
+        {
+          tid: 'clasificatorio-nacional-cedh-vina-del-mar',
+          store: 'Todo Freak',
+          storeId: 'todo-freak',
+          city: 'Viña del Mar',
+          format: 'EDH',
+          idLabel: 'Clasificatorio Nacional cEDH',
+          fecha: '2026-07-05',
+          eventUrl: 'https://topdeck.gg/event/clasificatorio-nacional-cedh-vina-del-mar',
+          social: 'https://www.instagram.com/todofreakstore/'
+        }
+      ],
+      tournamentCache: {},
+      loadingByTid: {},
+      errorByTid: {}
+    });
+
+    function formatDateFriendly(dateString) {
+      if (!dateString) return 'Sin fecha';
+      const date = new Date(dateString + 'T00:00:00');
+      return date.toLocaleDateString('es-CL', { year:'numeric', month:'long', day:'numeric' });
+    }
+
+    function formatUnixDate(unix) {
+      if (!unix) return 'Sin fecha';
+      return new Date(unix * 1000).toLocaleDateString('es-CL', { year:'numeric', month:'long', day:'numeric' });
+    }
+
+    function percent(value, digits = 1) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+      return `${(Number(value) * 100).toFixed(digits)}%`;
+    }
+
+    function getCommanders(standing) {
+      const commanders = standing?.deckObj?.Commanders;
+      if (!commanders || typeof commanders !== 'object') return [];
+      return Object.keys(commanders).filter(Boolean);
+    }
+
+    function deckPreview(standing) {
+      if (typeof standing?.decklist === 'string' && standing.decklist.trim()) return standing.decklist.trim();
+      const commanders = getCommanders(standing);
+      if (commanders.length) return `Commanders\n${commanders.join('\n')}`;
+      return 'Decklist no disponible';
+    }
+
+    function buildTournamentSummary(payload) {
+      const data = payload?.data || {};
+      const standings = Array.isArray(payload?.standings) ? payload.standings : [];
+      const rounds = Array.isArray(payload?.rounds) ? payload.rounds : [];
+
+      const normalizedStandings = standings.map(item => {
+        const commanders = getCommanders(item);
+        return {
+          ...item,
+          commanders,
+          commanderLabel: commanders.join(' / ') || 'Sin comandante detectado',
+          deckPreview: deckPreview(item)
+        };
+      });
+
+      const commanderMap = {};
+      normalizedStandings.forEach(player => {
+        const labels = player.commanders.length ? player.commanders : ['Sin comandante detectado'];
+        labels.forEach(name => {
+          if (!commanderMap[name]) commanderMap[name] = { name, count: 0, players: [], bestStanding: null };
+          commanderMap[name].count += 1;
+          commanderMap[name].players.push(player.name);
+          if (player.standing !== undefined && player.standing !== null) {
+            commanderMap[name].bestStanding = commanderMap[name].bestStanding === null
+              ? player.standing
+              : Math.min(commanderMap[name].bestStanding, player.standing);
+          }
+        });
+      });
+
+      const metagame = Object.values(commanderMap)
+        .map(entry => ({
+          ...entry,
+          share: normalizedStandings.length ? entry.count / normalizedStandings.length : 0
+        }))
+        .sort((a, b) => b.count - a.count || (a.bestStanding ?? 999) - (b.bestStanding ?? 999));
+
+      const topStandings = [...normalizedStandings]
+        .sort((a, b) => (a.standing ?? 999) - (b.standing ?? 999));
+
+      return {
+        data,
+        rounds,
+        standings: normalizedStandings,
+        metagame,
+        topStandings,
+        kpis: {
+          totalPlayers: normalizedStandings.length,
+          uniqueCommanders: metagame.filter(x => x.name !== 'Sin comandante detectado').length,
+          rounds: rounds.length,
+          topCommander: metagame[0]?.name || '—'
+        }
+      };
+    }
+
+    async function loadTournamentData(tid) {
+      if (store.tournamentCache[tid]) return store.tournamentCache[tid];
+      store.loadingByTid[tid] = true;
+      store.errorByTid[tid] = '';
+      try {
+        const res = await fetch(`${API_CONFIG.apiBase}/v2/tournaments/${tid}`, {
+          headers: {
+            'Authorization': API_CONFIG.apiKey,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+        const summary = buildTournamentSummary(data);
+        store.tournamentCache[tid] = summary;
+        return summary;
+      } catch (err) {
+        store.errorByTid[tid] = err.message || 'No se pudo cargar el torneo';
+        throw err;
+      } finally {
+        store.loadingByTid[tid] = false;
+      }
+    }
+
+    const Home = {
+      components: { RouterLink },
+      setup() {
+        const storeGroups = computed(() => {
+          const map = {};
+          store.events.forEach(ev => {
+            if (!map[ev.storeId]) map[ev.storeId] = { id: ev.storeId, label: ev.store, social: ev.social, dates: [] };
+            map[ev.storeId].dates.push(ev);
+          });
+          return Object.values(map).map(group => ({
+            ...group,
+            dates: group.dates.sort((a, b) => a.fecha.localeCompare(b.fecha))
+          }));
+        });
+
+        function eventStars(idLabel) {
+          if (!idLabel) return '';
+          if (/nacional/i.test(idLabel)) return '★';
+          if (/clasificatorio/i.test(idLabel)) return '☆';
+          return '';
+        }
+
+        return { storeGroups, formatDateFriendly, eventStars };
+      },
+      template: `
+        <div class="home-container">
+          <div class="home-card">
+            <h1 class="home-title">Commander Dashboard</h1>
+            <p class="home-subtitle">Home reciclado desde tu idea original: lista de eventos por tienda, con entrada directa a la vista de metagame del torneo.</p>
+            <div v-if="storeGroups.length" class="stores-list">
+              <div v-for="s in storeGroups" :key="s.id" class="store-group">
+                <template v-if="s.social">
+                  <a :href="s.social" target="_blank" rel="noopener noreferrer" class="store-button">
+                    <i class="bi bi-instagram"></i>
+                    <span>{{ s.label }}</span>
+                  </a>
+                </template>
+                <template v-else>
+                  <div class="store-button"><i class="bi bi-shop"></i><span>{{ s.label }}</span></div>
+                </template>
+
+                <ul class="store-dates">
+                  <li v-for="d in s.dates" :key="d.tid">
+                    <div>
+                      <router-link :to="{ name: 'metagame', params: { id: s.id }, query: { tid: d.tid } }" class="fw-semibold text-light">
+                        {{ formatDateFriendly(d.fecha) }}
+                      </router-link>
+                      <div class="store-datemeta">{{ d.store }} · {{ d.format }} · {{ d.city }} <span v-if="d.idLabel">· {{ d.idLabel }}</span> <span v-if="eventStars(d.idLabel)" class="text-warning ms-1">{{ eventStars(d.idLabel) }}</span></div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                      <a class="btn btn-sm btn-outline-light" :href="d.eventUrl" target="_blank" rel="noopener noreferrer">Evento</a>
+                      <router-link class="btn btn-sm btn-info" :to="{ name: 'metagame', params: { id: s.id }, query: { tid: d.tid } }">Metagame</router-link>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div v-else class="text-center text-secondary">Cargando eventos...</div>
+          </div>
+        </div>
+      `
+    };
+
+    const Metagame = {
+      setup() {
+        const route = useRoute();
+        const search = ref('');
+        const debugOpen = ref(false);
+        const loading = ref(false);
+        const error = ref('');
+        const summary = ref(null);
+
+        const selectedEvent = computed(() => store.events.find(ev => ev.tid === route.query.tid) || null);
+        const filteredStandings = computed(() => {
+          const list = summary.value?.standings || [];
+          const q = search.value.trim().toLowerCase();
+          if (!q) return list;
+          return list.filter(player => [player.name, player.commanderLabel, player.decklist].filter(Boolean).some(v => String(v).toLowerCase().includes(q)));
+        });
+
+        async function init() {
+          if (!route.query.tid) return;
+          loading.value = true;
+          error.value = '';
+          try {
+            summary.value = await loadTournamentData(route.query.tid);
+          } catch (err) {
+            error.value = err.message || 'No se pudo cargar el torneo';
+          } finally {
+            loading.value = false;
+          }
+        }
+
+        onMounted(init);
+
+        return { route, search, debugOpen, loading, error, summary, selectedEvent, filteredStandings, formatUnixDate, percent, store };
+      },
+      template: `
+        <div>
+          <section v-if="loading" class="main-container"><div class="empty-state"><h3 class="panel-title">Cargando torneo</h3><p class="panel-subtitle mb-0">Consultando TopDeck para construir el resumen del metagame.</p></div></section>
+          <section v-else-if="error" class="main-container"><div class="empty-state"><h3 class="panel-title">Error</h3><p class="panel-subtitle mb-2">{{ error }}</p><p class="tiny mb-0">Si falla autenticación o permisos, revisa la API key o el acceso al torneo.</p></div></section>
+          <section v-else-if="summary" class="main-container">
+            <div class="kpi-grid">
+              <div class="panel-card"><div class="metric-label">Jugadores</div><div class="metric-value">{{ summary.kpis.totalPlayers }}</div></div>
+              <div class="panel-card"><div class="metric-label">Commanders únicos</div><div class="metric-value">{{ summary.kpis.uniqueCommanders }}</div></div>
+              <div class="panel-card"><div class="metric-label">Rondas</div><div class="metric-value">{{ summary.kpis.rounds }}</div></div>
+              <div class="panel-card"><div class="metric-label">Commander top</div><div class="metric-value" style="font-size:1.1rem;line-height:1.2">{{ summary.kpis.topCommander }}</div></div>
+            </div>
+
+            <div class="meta-grid">
+              <div class="meta-card"><div class="metric-label">Torneo</div><div class="fw-bold">{{ summary.data.name || selectedEvent?.idLabel || 'Commander Event' }}</div></div>
+              <div class="meta-card"><div class="metric-label">Fecha</div><div class="fw-bold">{{ formatUnixDate(summary.data.startDate) }}</div></div>
+              <div class="meta-card"><div class="metric-label">Formato</div><div class="fw-bold">{{ summary.data.format || selectedEvent?.format || 'EDH' }}</div></div>
+              <div class="meta-card"><div class="metric-label">TID</div><div class="fw-bold">{{ summary.data.tid }}</div></div>
+            </div>
+
+            <div class="panel-card mb-3">
+              <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                <div>
+                  <h3 class="panel-title">Resumen del torneo</h3>
+                  <p class="panel-subtitle mb-0">Vista reciclada como base: bloque de metagame + standings con comandante, jugador, puntaje final y decklist.</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                  <a v-if="selectedEvent?.eventUrl" class="btn btn-outline-light" :href="selectedEvent.eventUrl" target="_blank" rel="noopener noreferrer">Ver evento</a>
+                  <button class="btn btn-outline-info" @click="debugOpen = !debugOpen">{{ debugOpen ? 'Ocultar JSON' : 'Mostrar JSON' }}</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-card mb-3">
+              <h3 class="panel-title">Metagame</h3>
+              <p class="panel-subtitle">Agrupado principalmente desde <code>deckObj.Commanders</code> cuando la API lo trae estructurado.</p>
+              <div class="metagame-grid">
+                <article v-for="arch in summary.metagame" :key="arch.name" class="meta-card">
+                  <span class="share-pill">{{ (arch.share * 100).toFixed(1) }}% del field</span>
+                  <div class="commander-name mt-2">{{ arch.name }}</div>
+                  <div class="meta-stat-line mt-2">
+                    <span><strong>{{ arch.count }}</strong> jugador(es)</span>
+                    <span><strong>Mejor standing:</strong> {{ arch.bestStanding ?? '—' }}</span>
+                    <span>{{ arch.players.slice(0, 4).join(', ') }}<template v-if="arch.players.length > 4">…</template></span>
+                  </div>
+                </article>
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                <div>
+                  <h3 class="panel-title">Standings</h3>
+                  <p class="panel-subtitle mb-0">Base inicial para tus cards del torneo.</p>
+                </div>
+                <input v-model="search" type="search" class="form-control search-box" placeholder="Buscar jugador o comandante">
+              </div>
+              <div class="standings-grid">
+                <article v-for="player in filteredStandings" :key="player.id || player.name" class="standing-card">
+                  <span class="rank-pill">#{{ player.standing ?? '—' }}</span>
+                  <div class="player-name mt-2">{{ player.name }}</div>
+                  <div class="standing-line mt-2">
+                    <span><strong>Commander:</strong> {{ player.commanderLabel }}</span>
+                    <span><strong>Puntaje final:</strong> {{ player.points ?? '—' }}</span>
+                    <span><strong>Win rate:</strong> {{ percent(player.winRate) }}</span>
+                    <span><strong>OWR:</strong> {{ percent(player.opponentWinRate) }}</span>
+                  </div>
+                  <div class="decklist-box mt-3">{{ player.deckPreview }}</div>
+                </article>
+              </div>
+            </div>
+
+            <div v-if="debugOpen" class="panel-card mt-3">
+              <h3 class="panel-title">Debug JSON</h3>
+              <p class="panel-subtitle">Útil para revisar qué campos reales entrega este torneo y seguir afinando componentes.</p>
+              <div class="decklist-box" style="max-height:520px">{{ JSON.stringify(summary, null, 2) }}</div>
+            </div>
+          </section>
+        </div>
+      `
+    };
+
+    const TournamentLayout = {
+      components: { RouterLink, RouterView },
+      setup() {
+        const route = useRoute();
+        const selectedEvent = computed(() => store.events.find(ev => ev.tid === route.query.tid) || null);
+        return { route, selectedEvent, formatDateFriendly };
+      },
+      template: `
+        <div>
+          <header class="layout-header">
+            <div class="layout-header-inner">
+              <div>
+                <div class="layout-title">{{ selectedEvent?.store || 'Commander Store' }}</div>
+                <div class="layout-badges">
+                  <span class="badge text-bg-info">{{ selectedEvent?.format || 'EDH' }}</span>
+                  <span v-if="selectedEvent?.idLabel" class="badge text-bg-warning">{{ selectedEvent.idLabel }}</span>
+                  <span v-if="selectedEvent?.fecha" class="badge text-bg-dark">{{ formatDateFriendly(selectedEvent.fecha) }}</span>
+                </div>
+              </div>
+              <router-link class="btn btn-outline-light" to="/"><i class="bi bi-arrow-left me-1"></i>Inicio</router-link>
+            </div>
+          </header>
+
+          <div class="nav-pills-wrap">
+            <div class="nav-pills-inner">
+              <div class="tiny">Home → Lista de Eventos / Metagame → Resumen del torneo</div>
+              <div class="view-tabs">
+                <router-link class="view-tab" :to="{ name: 'metagame', params: { id: route.params.id }, query: { tid: route.query.tid } }">Metagame</router-link>
+              </div>
+            </div>
+          </div>
+
+          <div class="main-container">
+            <router-view></router-view>
+          </div>
+        </div>
+      `
+    };
+
+    const routes = [
+      { path: '/', component: Home, name: 'home' },
+      {
+        path: '/tienda/:id',
+        component: TournamentLayout,
+        children: [
+          { path: 'metagame', component: Metagame, name: 'metagame' },
+          { path: '', redirect: to => ({ name: 'metagame', params: to.params, query: to.query }) }
+        ]
+      }
+    ];
+
+    const router = createRouter({ history: createWebHashHistory(), routes });
+
+    const App = { template: `<router-view></router-view>` };
+
+    createApp(App).use(router).mount('#app');
+  </script>
+</body>
+</html>
