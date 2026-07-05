@@ -1,75 +1,276 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Commander Dashboard - Home y Metagame</title>
+  <title>Commander Dashboard - RCQ Reporter Style</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://unpkg.com/vue-router@4"></script>
   <style>
-    :root{
-      --bg:#111827;--panel:#1f2937;--panel-2:#0f172a;--line:#334155;--text:#e5e7eb;--muted:#94a3b8;--brand:#38bdf8;--brand-2:#22c55e;--gold:#facc15;
+    body {
+      background: linear-gradient(135deg, #87CEEB 0%, #B0E0E6 100%);
+      min-height: 100vh;
     }
-    *{box-sizing:border-box}
-    body{background:linear-gradient(180deg,#0b1120 0%, #111827 100%);color:var(--text);min-height:100vh}
-    a{text-decoration:none}
-    .app-footer{padding:20px;text-align:center;color:var(--muted);font-size:.9rem}
-    .home-container,.main-container{max-width:1200px;margin:0 auto;padding:24px}
-    .home-card,.panel-card,.meta-card,.standing-card,.event-card{background:rgba(31,41,55,.92);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
-    .home-card{padding:24px}
-    .home-title{font-size:2rem;font-weight:800;margin-bottom:6px}
-    .home-subtitle{color:var(--muted);margin-bottom:20px}
-    .stores-list{display:grid;gap:18px}
-    .store-group{background:rgba(15,23,42,.6);border:1px solid #263245;border-radius:18px;padding:18px}
-    .store-button{display:flex;align-items:center;gap:10px;border-radius:999px;padding:12px 16px;background:linear-gradient(135deg,#1d4ed8,#0f766e);color:#fff;font-weight:700;width:max-content;margin-bottom:14px}
-    .store-dates{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-    .store-dates li{background:rgba(17,24,39,.7);border:1px solid #243041;border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-    .store-datemeta{color:var(--muted);font-size:.92rem}
-    .layout-header{background:linear-gradient(135deg,#1e3a8a 0%, #0f766e 100%);border-bottom:1px solid rgba(255,255,255,.08)}
-    .layout-header-inner{max-width:1200px;margin:0 auto;padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-    .layout-title{font-size:1.8rem;font-weight:800;line-height:1.1}
-    .layout-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .nav-pills-wrap{background:var(--panel-2);border-bottom:1px solid var(--line)}
-    .nav-pills-inner{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
-    .view-tabs{display:flex;gap:10px;flex-wrap:wrap}
-    .view-tab{border:1px solid #3b4d66;background:transparent;color:var(--text);padding:10px 14px;border-radius:999px;font-weight:600}
-    .router-link-active.view-tab{background:var(--brand);border-color:var(--brand);color:#082f49}
-    .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
-    .meta-grid,.metagame-grid,.standings-grid{display:grid;gap:14px}
-    .meta-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:18px}
-    .metagame-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-    .standings-grid{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
-    .panel-card{padding:18px}
-    .meta-card,.standing-card{padding:18px}
-    .metric-label{color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;margin-bottom:8px}
-    .metric-value{font-size:2rem;font-weight:800;line-height:1}
-    .panel-title{font-size:1.35rem;font-weight:800;margin-bottom:4px}
-    .panel-subtitle{color:var(--muted);margin-bottom:16px}
-    .commander-name,.player-name{font-size:1.15rem;font-weight:800;line-height:1.2}
-    .meta-stat-line,.standing-line{font-size:.95rem;color:var(--muted);display:grid;gap:4px}
-    .rank-pill,.share-pill,.badge-soft{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:.78rem;font-weight:700;width:max-content}
-    .rank-pill{background:rgba(250,204,21,.14);color:var(--gold)}
-    .share-pill{background:rgba(56,189,248,.14);color:var(--brand)}
-    .badge-soft{background:rgba(34,197,94,.14);color:#86efac}
-    .decklist-box{background:#0f172a;border:1px solid #243041;border-radius:12px;padding:12px;color:#cbd5e1;font-size:.8rem;white-space:pre-wrap;max-height:220px;overflow:auto}
-    .search-box{max-width:320px}
-    .empty-state{padding:28px;border:1px dashed #3b4d66;border-radius:18px;background:rgba(15,23,42,.45)}
-    .btn-outline-light{border-width:2px}
-    .tiny{font-size:.82rem;color:var(--muted)}
-    code{color:#93c5fd}
-    @media (max-width: 900px){.kpi-grid,.meta-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width: 640px){.home-container,.main-container,.layout-header-inner,.nav-pills-inner{padding:16px}.kpi-grid,.meta-grid,.metagame-grid,.standings-grid{grid-template-columns:1fr}.home-title,.layout-title{font-size:1.5rem}}
+    .navbar-custom {
+      background: white !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .navbar-custom .btn-outline-secondary {
+      border: 2px solid #000;
+      color: #000;
+      border-radius: 25px;
+      font-weight: 600;
+      padding: 8px 20px;
+      transition: all 0.3s ease;
+    }
+    .navbar-custom .btn-outline-secondary:hover {
+      background-color: #87CEEB;
+      border-color: #000;
+      color: #000;
+    }
+    .navbar-custom .btn-outline-primary {
+      border: 2px solid #87CEEB;
+      color: #000;
+      background: white;
+      border-radius: 25px;
+      font-weight: 600;
+      padding: 8px 20px;
+      transition: all 0.3s ease;
+    }
+    .navbar-custom .btn-outline-primary:hover,
+    .navbar-custom .btn-outline-primary.router-link-active {
+      background-color: #87CEEB;
+      border-color: #87CEEB;
+      color: #000;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(135, 206, 235, 0.3);
+    }
+    .navbar-custom .form-select {
+      border: 2px solid #000;
+      border-radius: 25px;
+      font-weight: 500;
+      padding: 8px 16px;
+    }
+    .navbar-custom .form-select:focus,
+    .form-control:focus {
+      border-color: #87CEEB;
+      box-shadow: 0 0 0 0.2rem rgba(135, 206, 235, 0.25);
+    }
+    .badge-gold { background-color: #FFD700; color: #000; font-weight: 700; }
+    .badge-silver { background-color: #C0C0C0; color: #000; font-weight: 700; }
+    .badge-bronze { background-color: #CD7F32; color: #fff; font-weight: 700; }
+    .badge-green { background-color: #87CEEB; color: #000; font-weight: 700; }
+    .main-container {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+    .table {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    .table-dark {
+      background-color: #000 !important;
+      border-color: #000 !important;
+    }
+    .table-dark th {
+      color: white;
+      font-weight: 700;
+      padding: 1rem;
+      border-color: #333 !important;
+    }
+    .table-hover tbody tr:hover {
+      background-color: rgba(135, 206, 235, 0.15);
+    }
+    .table tbody td {
+      padding: 0.75rem 1rem;
+      vertical-align: middle;
+    }
+    .table tbody td a {
+      color: #0d6efd;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .table tbody td a:hover {
+      color: #000;
+      text-decoration: underline;
+    }
+    .card {
+      border: 2px solid #000;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    .card-title { color: #000; font-weight: 700; }
+    .card-img-top { width: 100%; height: 100px; object-fit: cover; object-position: center; }
+    .wr--green { color: #1a6630; }
+    .wr--yellow { color: #856404; }
+    .wr--red { color: #842029; }
+    .home-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #87CEEB 0%, #B0E0E6 100%);
+      padding: 2rem;
+    }
+    .home-card {
+      background: white !important;
+      border-radius: 24px !important;
+      padding: 3rem !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+      max-width: 700px;
+      width: 100%;
+    }
+    .home-title {
+      color: #000 !important;
+      font-weight: bold !important;
+      text-align: center;
+      margin-bottom: 0.75rem !important;
+    }
+    .home-subtitle {
+      text-align: center;
+      color: #6c757d;
+      margin-bottom: 2rem;
+    }
+    .stores-list { display: flex; flex-direction: column; gap: 1rem; }
+    .store-group { margin-bottom: 1rem; }
+    .store-button {
+      display: flex !important;
+      align-items: center !important;
+      gap: 1rem !important;
+      padding: 10px 20px !important;
+      border: 2px solid #000 !important;
+      border-radius: 50px !important;
+      background: white !important;
+      color: #000 !important;
+      font-size: 1.1rem !important;
+      font-weight: 600 !important;
+      text-decoration: none !important;
+      transition: all 0.3s ease !important;
+      width: fit-content;
+    }
+    .store-button:hover {
+      background-color: #87CEEB !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+      color: #000 !important;
+    }
+    .store-dates {
+      list-style: none;
+      padding: 0.25rem 0 0 2rem;
+      margin: 0;
+      display: grid;
+      gap: .75rem;
+    }
+    .store-dates li {
+      background: rgba(255,255,255,.65);
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 12px;
+      padding: .8rem 1rem;
+    }
+    .store-datemeta {
+      color: #6c757d;
+      font-size: 0.85rem;
+      margin-left: 0.25rem;
+    }
+    .meta-stat-label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #888;
+    }
+    .meta-stat-value {
+      font-size: 1.1rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .vde-pill {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
+    .vde-pill--win { background: #d4edda; color: #1a6630; }
+    .vde-pill--loss { background: #f8d7da; color: #842029; }
+    .vde-pill--draw { background: #e9ecef; color: #495057; }
+    .summary-kpi {
+      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+      border: 2px solid #000;
+      border-radius: 18px;
+      padding: 1rem;
+      text-align: center;
+      height: 100%;
+    }
+    .summary-kpi-label {
+      font-size: .75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #6c757d;
+      letter-spacing: .04em;
+    }
+    .summary-kpi-value {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: #000;
+      line-height: 1.1;
+      margin-top: .35rem;
+    }
+    .summary-card {
+      background: #fff;
+      border: 2px solid #000;
+      border-radius: 18px;
+      padding: 1rem;
+      height: 100%;
+    }
+    .decklist-preview {
+      white-space: pre-wrap;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 12px;
+      padding: .75rem;
+      font-size: .78rem;
+      max-height: 180px;
+      overflow: auto;
+    }
+    .page-title {
+      color: #000;
+      font-weight: 800;
+      margin-bottom: .25rem;
+    }
+    .page-subtitle { color: #6c757d; }
+    footer {
+      background: transparent;
+      color: #000;
+      font-weight: 600;
+      text-align: center;
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+    @media (max-width: 768px) {
+      .home-card { padding: 2rem !important; }
+      .main-container { padding: 1rem; }
+      .store-dates { padding-left: 1rem; }
+    }
   </style>
 </head>
 <body>
   <div id="app"></div>
-  <footer class="app-footer">Mario Canto · 2026 · Dashboard Commander · Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener noreferrer">TopDeck.gg</a></footer>
+  <footer>Mario Canto · 2026 · Dashboard Commander · Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener noreferrer">TopDeck.gg</a></footer>
 
   <script>
     const { createApp, ref, computed, onMounted } = Vue;
-    const { createRouter, createWebHashHistory, RouterLink, RouterView, useRoute } = VueRouter;
+    const { createRouter, createWebHashHistory, RouterLink, useRoute } = VueRouter;
 
     const API_CONFIG = {
       apiBase: 'https://topdeck.gg/api',
@@ -97,18 +298,30 @@
 
     function formatDateFriendly(dateString) {
       if (!dateString) return 'Sin fecha';
-      const date = new Date(dateString + 'T00:00:00');
-      return date.toLocaleDateString('es-CL', { year:'numeric', month:'long', day:'numeric' });
+      return new Date(dateString + 'T00:00:00').toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
     }
 
     function formatUnixDate(unix) {
       if (!unix) return 'Sin fecha';
-      return new Date(unix * 1000).toLocaleDateString('es-CL', { year:'numeric', month:'long', day:'numeric' });
+      return new Date(unix * 1000).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
     }
 
     function percent(value, digits = 1) {
       if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
       return `${(Number(value) * 100).toFixed(digits)}%`;
+    }
+
+    function inferBadge(standing) {
+      if (standing === 1) return '1st';
+      if (standing === 2) return '2nd';
+      if (standing <= 4) return 'T4';
+      if (standing <= 8) return 'T8';
+      return null;
+    }
+
+    function badgeClass(badge) {
+      const map = { '1st': 'badge-gold', '2nd': 'badge-silver', 'T4': 'badge-bronze', 'T8': 'badge-green' };
+      return map[badge] || 'text-bg-secondary';
     }
 
     function getCommanders(standing) {
@@ -131,9 +344,11 @@
 
       const normalizedStandings = standings.map(item => {
         const commanders = getCommanders(item);
+        const badge = item.badge || inferBadge(item.standing);
         return {
           ...item,
           commanders,
+          badge,
           commanderLabel: commanders.join(' / ') || 'Sin comandante detectado',
           deckPreview: deckPreview(item)
         };
@@ -143,13 +358,18 @@
       normalizedStandings.forEach(player => {
         const labels = player.commanders.length ? player.commanders : ['Sin comandante detectado'];
         labels.forEach(name => {
-          if (!commanderMap[name]) commanderMap[name] = { name, count: 0, players: [], bestStanding: null };
+          if (!commanderMap[name]) commanderMap[name] = { name, count: 0, players: [], bestStanding: null, wins: 0, losses: 0, draws: 0, totalGames: 0 };
           commanderMap[name].count += 1;
           commanderMap[name].players.push(player.name);
+          const wins = parseInt(player.wins ?? player.V ?? 0);
+          const losses = parseInt(player.losses ?? player.D ?? 0);
+          const draws = parseInt(player.draws ?? player.E ?? 0);
+          commanderMap[name].wins += wins;
+          commanderMap[name].losses += losses;
+          commanderMap[name].draws += draws;
+          commanderMap[name].totalGames += wins + losses + draws;
           if (player.standing !== undefined && player.standing !== null) {
-            commanderMap[name].bestStanding = commanderMap[name].bestStanding === null
-              ? player.standing
-              : Math.min(commanderMap[name].bestStanding, player.standing);
+            commanderMap[name].bestStanding = commanderMap[name].bestStanding === null ? player.standing : Math.min(commanderMap[name].bestStanding, player.standing);
           }
         });
       });
@@ -157,19 +377,16 @@
       const metagame = Object.values(commanderMap)
         .map(entry => ({
           ...entry,
-          share: normalizedStandings.length ? entry.count / normalizedStandings.length : 0
+          share: normalizedStandings.length ? entry.count / normalizedStandings.length : 0,
+          winRate: entry.totalGames ? ((entry.wins / entry.totalGames) * 100).toFixed(1) : 'NA'
         }))
         .sort((a, b) => b.count - a.count || (a.bestStanding ?? 999) - (b.bestStanding ?? 999));
-
-      const topStandings = [...normalizedStandings]
-        .sort((a, b) => (a.standing ?? 999) - (b.standing ?? 999));
 
       return {
         data,
         rounds,
-        standings: normalizedStandings,
+        standings: normalizedStandings.sort((a, b) => (a.standing ?? 999) - (b.standing ?? 999)),
         metagame,
-        topStandings,
         kpis: {
           totalPlayers: normalizedStandings.length,
           uniqueCommanders: metagame.filter(x => x.name !== 'Sin comandante detectado').length,
@@ -212,55 +429,104 @@
             if (!map[ev.storeId]) map[ev.storeId] = { id: ev.storeId, label: ev.store, social: ev.social, dates: [] };
             map[ev.storeId].dates.push(ev);
           });
-          return Object.values(map).map(group => ({
-            ...group,
-            dates: group.dates.sort((a, b) => a.fecha.localeCompare(b.fecha))
-          }));
+          return Object.values(map).map(group => ({ ...group, dates: group.dates.sort((a, b) => a.fecha.localeCompare(b.fecha)) }));
         });
-
-        function eventStars(idLabel) {
-          if (!idLabel) return '';
-          if (/nacional/i.test(idLabel)) return '★';
-          if (/clasificatorio/i.test(idLabel)) return '☆';
-          return '';
-        }
-
-        return { storeGroups, formatDateFriendly, eventStars };
+        return { storeGroups, formatDateFriendly };
       },
       template: `
         <div class="home-container">
           <div class="home-card">
-            <h1 class="home-title">Commander Dashboard</h1>
-            <p class="home-subtitle">Home reciclado desde tu idea original: lista de eventos por tienda, con entrada directa a la vista de metagame del torneo.</p>
+            <h1 class="home-title">Commander Reporter</h1>
+            <p class="home-subtitle">Lista de eventos con la misma línea visual del reporter RCQ y acceso a Standing y Metagame.</p>
             <div v-if="storeGroups.length" class="stores-list">
               <div v-for="s in storeGroups" :key="s.id" class="store-group">
-                <template v-if="s.social">
-                  <a :href="s.social" target="_blank" rel="noopener noreferrer" class="store-button">
-                    <i class="bi bi-instagram"></i>
-                    <span>{{ s.label }}</span>
-                  </a>
-                </template>
-                <template v-else>
-                  <div class="store-button"><i class="bi bi-shop"></i><span>{{ s.label }}</span></div>
-                </template>
-
+                <a v-if="s.social" :href="s.social" target="_blank" rel="noopener noreferrer" class="store-button store-button--header">
+                  <i class="bi bi-instagram"></i><span>{{ s.label }}</span>
+                </a>
+                <div v-else class="store-button store-button--header"><i class="bi bi-shop"></i><span>{{ s.label }}</span></div>
                 <ul class="store-dates">
                   <li v-for="d in s.dates" :key="d.tid">
                     <div>
-                      <router-link :to="{ name: 'metagame', params: { id: s.id }, query: { tid: d.tid } }" class="fw-semibold text-light">
-                        {{ formatDateFriendly(d.fecha) }}
-                      </router-link>
-                      <div class="store-datemeta">{{ d.store }} · {{ d.format }} · {{ d.city }} <span v-if="d.idLabel">· {{ d.idLabel }}</span> <span v-if="eventStars(d.idLabel)" class="text-warning ms-1">{{ eventStars(d.idLabel) }}</span></div>
-                    </div>
-                    <div class="d-flex gap-2 flex-wrap">
-                      <a class="btn btn-sm btn-outline-light" :href="d.eventUrl" target="_blank" rel="noopener noreferrer">Evento</a>
-                      <router-link class="btn btn-sm btn-info" :to="{ name: 'metagame', params: { id: s.id }, query: { tid: d.tid } }">Metagame</router-link>
+                      <router-link :to="{ name: 'standing', params: { id: s.id }, query: { tid: d.tid } }">{{ formatDateFriendly(d.fecha) }}</router-link>
+                      <span class="store-datemeta">{{ d.store }} · {{ d.format }} · {{ d.idLabel }}</span>
                     </div>
                   </li>
                 </ul>
               </div>
             </div>
-            <div v-else class="text-center text-secondary">Cargando eventos...</div>
+          </div>
+        </div>
+      `
+    };
+
+    function useTournamentSummary() {
+      const route = useRoute();
+      const loading = ref(false);
+      const error = ref('');
+      const summary = ref(null);
+      const selectedEvent = computed(() => store.events.find(ev => ev.tid === route.query.tid) || null);
+
+      async function init() {
+        if (!route.query.tid) return;
+        loading.value = true;
+        error.value = '';
+        try {
+          summary.value = await loadTournamentData(route.query.tid);
+        } catch (err) {
+          error.value = err.message || 'No se pudo cargar el torneo';
+        } finally {
+          loading.value = false;
+        }
+      }
+
+      onMounted(init);
+      return { route, loading, error, summary, selectedEvent };
+    }
+
+    const Standing = {
+      setup() {
+        const { loading, error, summary } = useTournamentSummary();
+        return { loading, error, summary, badgeClass, inferBadge };
+      },
+      template: `
+        <div>
+          <div v-if="loading" class="text-muted">Cargando standing...</div>
+          <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
+          <div v-else-if="summary">
+            <h2 class="page-title">Standing</h2>
+            <p class="page-subtitle">Vista reciclada desde tu reporter original: tabla simple, rápida y legible.</p>
+            <div class="table-responsive mt-3">
+              <table class="table table-sm table-bordered table-hover align-middle">
+                <thead class="table-dark">
+                  <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Pts</th>
+                    <th>WR</th>
+                    <th>OWR</th>
+                    <th>Commander</th>
+                    <th>Decklist</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="player in summary.standings" :key="player.id || player.name">
+                    <td>{{ player.standing ?? '—' }}</td>
+                    <td>
+                      {{ player.name }}
+                      <span v-if="player.badge" class="badge ms-2" :class="badgeClass(player.badge)">{{ player.badge }}</span>
+                    </td>
+                    <td>{{ player.points ?? '—' }}</td>
+                    <td>{{ player.winRate !== undefined && player.winRate !== null ? (Number(player.winRate) * 100).toFixed(1) + '%' : '—' }}</td>
+                    <td>{{ player.opponentWinRate !== undefined && player.opponentWinRate !== null ? (Number(player.opponentWinRate) * 100).toFixed(1) + '%' : '—' }}</td>
+                    <td>{{ player.commanderLabel }}</td>
+                    <td>
+                      <a v-if="player.decklist && /^https?:\/\//.test(player.decklist)" :href="player.decklist" target="_blank" rel="noopener noreferrer">Ver decklist</a>
+                      <span v-else class="text-muted small">Embebida / no URL</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       `
@@ -268,121 +534,64 @@
 
     const Metagame = {
       setup() {
-        const route = useRoute();
-        const search = ref('');
-        const debugOpen = ref(false);
-        const loading = ref(false);
-        const error = ref('');
-        const summary = ref(null);
-
-        const selectedEvent = computed(() => store.events.find(ev => ev.tid === route.query.tid) || null);
-        const filteredStandings = computed(() => {
-          const list = summary.value?.standings || [];
-          const q = search.value.trim().toLowerCase();
-          if (!q) return list;
-          return list.filter(player => [player.name, player.commanderLabel, player.decklist].filter(Boolean).some(v => String(v).toLowerCase().includes(q)));
-        });
-
-        async function init() {
-          if (!route.query.tid) return;
-          loading.value = true;
-          error.value = '';
-          try {
-            summary.value = await loadTournamentData(route.query.tid);
-          } catch (err) {
-            error.value = err.message || 'No se pudo cargar el torneo';
-          } finally {
-            loading.value = false;
-          }
-        }
-
-        onMounted(init);
-
-        return { route, search, debugOpen, loading, error, summary, selectedEvent, filteredStandings, formatUnixDate, percent, store };
+        const { loading, error, summary } = useTournamentSummary();
+        return { loading, error, summary, formatUnixDate };
       },
       template: `
         <div>
-          <section v-if="loading" class="main-container"><div class="empty-state"><h3 class="panel-title">Cargando torneo</h3><p class="panel-subtitle mb-0">Consultando TopDeck para construir el resumen del metagame.</p></div></section>
-          <section v-else-if="error" class="main-container"><div class="empty-state"><h3 class="panel-title">Error</h3><p class="panel-subtitle mb-2">{{ error }}</p><p class="tiny mb-0">Si falla autenticación o permisos, revisa la API key o el acceso al torneo.</p></div></section>
-          <section v-else-if="summary" class="main-container">
-            <div class="kpi-grid">
-              <div class="panel-card"><div class="metric-label">Jugadores</div><div class="metric-value">{{ summary.kpis.totalPlayers }}</div></div>
-              <div class="panel-card"><div class="metric-label">Commanders únicos</div><div class="metric-value">{{ summary.kpis.uniqueCommanders }}</div></div>
-              <div class="panel-card"><div class="metric-label">Rondas</div><div class="metric-value">{{ summary.kpis.rounds }}</div></div>
-              <div class="panel-card"><div class="metric-label">Commander top</div><div class="metric-value" style="font-size:1.1rem;line-height:1.2">{{ summary.kpis.topCommander }}</div></div>
+          <div v-if="loading" class="text-muted">Cargando metagame...</div>
+          <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
+          <div v-else-if="summary">
+            <h2 class="page-title">Metagame</h2>
+            <p class="page-subtitle">Resumen del torneo alineado al estilo del RCQ reporter.</p>
+
+            <div class="row g-3 mb-4 mt-1">
+              <div class="col-6 col-md-3"><div class="summary-kpi"><div class="summary-kpi-label">Jugadores</div><div class="summary-kpi-value">{{ summary.kpis.totalPlayers }}</div></div></div>
+              <div class="col-6 col-md-3"><div class="summary-kpi"><div class="summary-kpi-label">Commanders</div><div class="summary-kpi-value">{{ summary.kpis.uniqueCommanders }}</div></div></div>
+              <div class="col-6 col-md-3"><div class="summary-kpi"><div class="summary-kpi-label">Rondas</div><div class="summary-kpi-value">{{ summary.kpis.rounds }}</div></div></div>
+              <div class="col-6 col-md-3"><div class="summary-kpi"><div class="summary-kpi-label">Fecha</div><div class="summary-kpi-value" style="font-size:1rem">{{ formatUnixDate(summary.data.startDate) }}</div></div></div>
             </div>
 
-            <div class="meta-grid">
-              <div class="meta-card"><div class="metric-label">Torneo</div><div class="fw-bold">{{ summary.data.name || selectedEvent?.idLabel || 'Commander Event' }}</div></div>
-              <div class="meta-card"><div class="metric-label">Fecha</div><div class="fw-bold">{{ formatUnixDate(summary.data.startDate) }}</div></div>
-              <div class="meta-card"><div class="metric-label">Formato</div><div class="fw-bold">{{ summary.data.format || selectedEvent?.format || 'EDH' }}</div></div>
-              <div class="meta-card"><div class="metric-label">TID</div><div class="fw-bold">{{ summary.data.tid }}</div></div>
-            </div>
-
-            <div class="panel-card mb-3">
-              <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-                <div>
-                  <h3 class="panel-title">Resumen del torneo</h3>
-                  <p class="panel-subtitle mb-0">Vista reciclada como base: bloque de metagame + standings con comandante, jugador, puntaje final y decklist.</p>
-                </div>
-                <div class="d-flex gap-2 flex-wrap">
-                  <a v-if="selectedEvent?.eventUrl" class="btn btn-outline-light" :href="selectedEvent.eventUrl" target="_blank" rel="noopener noreferrer">Ver evento</a>
-                  <button class="btn btn-outline-info" @click="debugOpen = !debugOpen">{{ debugOpen ? 'Ocultar JSON' : 'Mostrar JSON' }}</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="panel-card mb-3">
-              <h3 class="panel-title">Metagame</h3>
-              <p class="panel-subtitle">Agrupado principalmente desde <code>deckObj.Commanders</code> cuando la API lo trae estructurado.</p>
-              <div class="metagame-grid">
-                <article v-for="arch in summary.metagame" :key="arch.name" class="meta-card">
-                  <span class="share-pill">{{ (arch.share * 100).toFixed(1) }}% del field</span>
-                  <div class="commander-name mt-2">{{ arch.name }}</div>
-                  <div class="meta-stat-line mt-2">
-                    <span><strong>{{ arch.count }}</strong> jugador(es)</span>
-                    <span><strong>Mejor standing:</strong> {{ arch.bestStanding ?? '—' }}</span>
-                    <span>{{ arch.players.slice(0, 4).join(', ') }}<template v-if="arch.players.length > 4">…</template></span>
+            <div class="row row-cols-2 row-cols-md-4 g-2">
+              <div class="col" v-for="arch in summary.metagame" :key="arch.name">
+                <div class="card h-100">
+                  <div class="card-body p-2">
+                    <div class="d-flex align-items-start gap-1 mb-2">
+                      <div class="d-flex flex-wrap gap-1 flex-shrink-0">
+                        <span v-if="arch.bestStanding && arch.bestStanding === 1" class="badge badge-gold">1st</span>
+                        <span v-else-if="arch.bestStanding && arch.bestStanding === 2" class="badge badge-silver">2nd</span>
+                        <span v-else-if="arch.bestStanding && arch.bestStanding <= 4" class="badge badge-bronze">T4</span>
+                        <span v-else-if="arch.bestStanding && arch.bestStanding <= 8" class="badge badge-green">T8</span>
+                      </div>
+                      <h6 class="card-title mb-0" style="font-size:0.82rem;line-height:1.2">{{ arch.name }}</h6>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                      <div class="text-center flex-fill">
+                        <div class="meta-stat-label">META</div>
+                        <div class="meta-stat-value">{{ (arch.share * 100).toFixed(1) }}%</div>
+                      </div>
+                      <div class="vr"></div>
+                      <div class="text-center flex-fill">
+                        <div class="meta-stat-label">WIN</div>
+                        <div class="meta-stat-value" :class="arch.winRate !== 'NA' && parseFloat(arch.winRate) >= 52 ? 'wr--green' : (arch.winRate !== 'NA' && parseFloat(arch.winRate) >= 41 ? 'wr--yellow' : 'wr--red')">{{ arch.winRate }}</div>
+                      </div>
+                    </div>
+                    <div class="d-flex justify-content-center gap-2">
+                      <span class="vde-pill vde-pill--win">{{ arch.wins }} V</span>
+                      <span class="vde-pill vde-pill--loss">{{ arch.losses }} D</span>
+                      <span class="vde-pill vde-pill--draw">{{ arch.draws }} E</span>
+                    </div>
                   </div>
-                </article>
-              </div>
-            </div>
-
-            <div class="panel-card">
-              <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
-                <div>
-                  <h3 class="panel-title">Standings</h3>
-                  <p class="panel-subtitle mb-0">Base inicial para tus cards del torneo.</p>
                 </div>
-                <input v-model="search" type="search" class="form-control search-box" placeholder="Buscar jugador o comandante">
-              </div>
-              <div class="standings-grid">
-                <article v-for="player in filteredStandings" :key="player.id || player.name" class="standing-card">
-                  <span class="rank-pill">#{{ player.standing ?? '—' }}</span>
-                  <div class="player-name mt-2">{{ player.name }}</div>
-                  <div class="standing-line mt-2">
-                    <span><strong>Commander:</strong> {{ player.commanderLabel }}</span>
-                    <span><strong>Puntaje final:</strong> {{ player.points ?? '—' }}</span>
-                    <span><strong>Win rate:</strong> {{ percent(player.winRate) }}</span>
-                    <span><strong>OWR:</strong> {{ percent(player.opponentWinRate) }}</span>
-                  </div>
-                  <div class="decklist-box mt-3">{{ player.deckPreview }}</div>
-                </article>
               </div>
             </div>
-
-            <div v-if="debugOpen" class="panel-card mt-3">
-              <h3 class="panel-title">Debug JSON</h3>
-              <p class="panel-subtitle">Útil para revisar qué campos reales entrega este torneo y seguir afinando componentes.</p>
-              <div class="decklist-box" style="max-height:520px">{{ JSON.stringify(summary, null, 2) }}</div>
-            </div>
-          </section>
+          </div>
         </div>
       `
     };
 
     const TournamentLayout = {
-      components: { RouterLink, RouterView },
+      components: { RouterLink },
       setup() {
         const route = useRoute();
         const selectedEvent = computed(() => store.events.find(ev => ev.tid === route.query.tid) || null);
@@ -390,30 +599,30 @@
       },
       template: `
         <div>
-          <header class="layout-header">
-            <div class="layout-header-inner">
-              <div>
-                <div class="layout-title">{{ selectedEvent?.store || 'Commander Store' }}</div>
-                <div class="layout-badges">
-                  <span class="badge text-bg-info">{{ selectedEvent?.format || 'EDH' }}</span>
-                  <span v-if="selectedEvent?.idLabel" class="badge text-bg-warning">{{ selectedEvent.idLabel }}</span>
-                  <span v-if="selectedEvent?.fecha" class="badge text-bg-dark">{{ formatDateFriendly(selectedEvent.fecha) }}</span>
-                </div>
-              </div>
-              <router-link class="btn btn-outline-light" to="/"><i class="bi bi-arrow-left me-1"></i>Inicio</router-link>
-            </div>
-          </header>
-
-          <div class="nav-pills-wrap">
-            <div class="nav-pills-inner">
-              <div class="tiny">Home → Lista de Eventos / Metagame → Resumen del torneo</div>
-              <div class="view-tabs">
-                <router-link class="view-tab" :to="{ name: 'metagame', params: { id: route.params.id }, query: { tid: route.query.tid } }">Metagame</router-link>
+          <div class="d-flex align-items-center gap-3 px-3 py-3 border-bottom" style="background: linear-gradient(135deg, #1a3a5c 0%, #1e5080 100%);">
+            <div v-if="selectedEvent">
+              <div class="text-white fw-bold" style="font-size: 1.8rem; line-height: 1.1;">{{ selectedEvent.store }}</div>
+              <div class="mt-1 d-flex flex-wrap gap-2 align-items-center">
+                <span class="badge bg-secondary" style="font-size: 0.75rem; background: #87CEEB !important; color: #000;">{{ selectedEvent.format }}</span>
+                <span v-if="selectedEvent.idLabel" class="badge bg-warning text-dark" style="font-size: 0.75rem;">{{ selectedEvent.idLabel }}</span>
+                <span v-if="selectedEvent.fecha" class="text-white-50" style="font-size: 0.8rem;">{{ formatDateFriendly(selectedEvent.fecha) }}</span>
               </div>
             </div>
           </div>
 
-          <div class="main-container">
+          <nav class="navbar-custom border-bottom bg-light">
+            <div class="container d-flex flex-wrap align-items-center justify-content-between py-2 gap-2">
+              <div class="d-flex align-items-center mb-2 mb-md-0 gap-2 flex-wrap">
+                <router-link class="btn btn-outline-secondary btn-sm" to="/"><i class="bi bi-arrow-left"></i> Inicio</router-link>
+              </div>
+              <div class="d-flex gap-2 flex-wrap">
+                <router-link class="btn btn-sm btn-outline-primary" :to="{ name: 'standing', params: { id: route.params.id }, query: { tid: route.query.tid } }"><i class="bi bi-trophy me-1"></i>Standing</router-link>
+                <router-link class="btn btn-sm btn-outline-primary" :to="{ name: 'metagame', params: { id: route.params.id }, query: { tid: route.query.tid } }"><i class="bi bi-pie-chart me-1"></i>Metagame</router-link>
+              </div>
+            </div>
+          </nav>
+
+          <div class="main-container container mt-3">
             <router-view></router-view>
           </div>
         </div>
@@ -426,17 +635,16 @@
         path: '/tienda/:id',
         component: TournamentLayout,
         children: [
+          { path: 'standing', component: Standing, name: 'standing' },
           { path: 'metagame', component: Metagame, name: 'metagame' },
-          { path: '', redirect: to => ({ name: 'metagame', params: to.params, query: to.query }) }
+          { path: '', redirect: to => ({ name: 'standing', params: to.params, query: to.query }) }
         ]
       }
     ];
 
     const router = createRouter({ history: createWebHashHistory(), routes });
-
-    const App = { template: `<router-view></router-view>` };
-
-    createApp(App).use(router).mount('#app');
+    createApp({ template: '<router-view></router-view>' }).use(router).mount('#app');
   </script>
 </body>
 </html>
+EOF && cp output/commander-dashboard.html output/index.html
