@@ -516,8 +516,8 @@
                       <span v-if="player.badge" class="badge ms-2" :class="badgeClass(player.badge)">{{ player.badge }}</span>
                     </td>
                     <td>{{ player.points ?? '—' }}</td>
-                    <td>{{ player.winRate !== undefined && player.winRate !== null ? (Number(player.winRate) * 100).toFixed(1) + '%' : '—' }}</td>
-                    <td>{{ player.opponentWinRate !== undefined && player.opponentWinRate !== null ? (Number(player.opponentWinRate) * 100).toFixed(1) + '%' : '—' }}</td>
+                    <td>{{ player.winRateLabel || '—' }}</td>
+                    <td>{{ player.owrLabel || '—' }}</td>
                     <td>{{ player.commanderLabel }}</td>
                     <td>
                       <a v-if="player.decklist && /^https?:\/\//.test(player.decklist)" :href="player.decklist" target="_blank" rel="noopener noreferrer">Ver decklist</a>
