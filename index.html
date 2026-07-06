@@ -41,7 +41,8 @@
     const { createApp, ref, computed, onMounted } = Vue;
     const { createRouter, createWebHashHistory, RouterLink, useRoute } = VueRouter;
 
-    const API_CONFIG = { apiBase: 'https://topdeck.gg/api', apiKey: '9ce0ad59-1c79-41de-aff0-7443f6d028c3' };
+    // DESPUÉS
+const API_CONFIG = { proxyBase: 'https://edh-proxy-topdeck.mac-maxwell.workers.dev' };
 
     const store = Vue.reactive({
       events: [{ tid:'clasificatorio-nacional-cedh-vina-del-mar', store:'Todo Freak', storeId:'todo-freak', city:'Viña del Mar', format:'EDH', idLabel:'Clasificatorio Nacional cEDH', fecha:'2026-07-05', eventUrl:'https://topdeck.gg/event/clasificatorio-nacional-cedh-vina-del-mar', social:'https://www.instagram.com/todofreakstore/' }],
@@ -106,7 +107,8 @@
       store.loadingByTid[tid]=true;
       store.errorByTid[tid]='';
       try{
-        const res=await fetch(`${API_CONFIG.apiBase}/v2/tournaments/${tid}`,{ headers:{ 'Authorization':API_CONFIG.apiKey, 'Content-Type':'application/json' } });
+        // DESPUÉS
+const res=await fetch(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`);
         const data=await res.json();
         if(!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
         const summary=buildTournamentSummary(data);
