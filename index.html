@@ -42,8 +42,31 @@
     const { createRouter, createWebHashHistory, RouterLink, useRoute } = VueRouter;
 
     // DESPUÉS
+// DESPUÉS
 const API_CONFIG = { proxyBase: 'https://edh-proxy-topdeck.mac-maxwell.workers.dev' };
 
+// Overrides manuales para torneos donde la API no trae el commander.
+// Clave = tid del torneo, valor = { "Nombre jugador": "Commander" }
+const COMMANDER_OVERRIDES = {
+  'torneo-commander-landfall-bracket-3-0507': {
+    'Jonathan Mayorinca': 'Edgar Markov',
+    'Sofi': "Longshot, Rebel Bowman",
+    'Juan Godoy': 'Auntie Ool, Cursewretch',
+    'Vicky': 'Meren of Clan Nel Toth',
+    'Ricardo Hidalgo': 'Gargos, Vicious Watcher',
+    'Sellenite': 'Shiko, Paragon of the Way',
+    'Erickson Tapia': 'Cloud, Midgar Mercenary',
+    'Alejandro Guerrero': 'Quintorius, History Chaser',
+    'Jesus Bastias': 'Solphim, Mayhem Dominus',
+    'Jose': 'Korvold, Fae-Cursed King',
+    'Gabriel Guerrero': "Y'shtola, Night's Blessed",
+    'Alex Soto': "Sythis, Harvest's Hand",
+    'Antonio García': 'Giada, Font of Hope',
+    'Ale': 'Auntie Ool, Cursewretch',
+    'Maxiwis': 'Grand Arbiter Augustin IV',
+    'Francisco Coddou': 'Winota, Joiner of Forces'
+  }
+};
     const store = Vue.reactive({
       events: [{ tid:'clasificatorio-nacional-cedh-vina-del-mar', store:'Todo Freak', storeId:'todo-freak', city:'Viña del Mar', format:'EDH', idLabel:'Clasificatorio Nacional cEDH', fecha:'2026-07-05', eventUrl:'https://topdeck.gg/event/clasificatorio-nacional-cedh-vina-del-mar', social:'https://www.instagram.com/todofreakstore/' }],// DESPUÉS
 events: [
@@ -57,16 +80,28 @@ events: [
     function formatUnixDate(unix){ if(!unix) return 'Sin fecha'; return new Date(unix * 1000).toLocaleDateString('es-CL',{year:'numeric',month:'long',day:'numeric'}); }
     function inferBadge(standing){ if(standing===1) return '1st'; if(standing===2) return '2nd'; if(standing<=4) return 'T4'; if(standing<=8) return 'T8'; return null; }
     function badgeClass(badge){ const map={'1st':'badge-gold','2nd':'badge-silver','T4':'badge-bronze','T8':'badge-green'}; return map[badge] || 'text-bg-secondary'; }
-    function getCommanders(standing){ const c=standing?.deckObj?.Commanders; if(!c || typeof c!=='object') return []; return Object.keys(c).filter(Boolean); }
+   // DESPUÉS
+function getCommanders(standing, overrideName){
+  const c=standing?.deckObj?.Commanders;
+  if(c && typeof c==='object'){
+    const names=Object.keys(c).filter(Boolean);
+    if(names.length) return names;
+  }
+  if(overrideName) return [overrideName];
+  return [];
+}
     function isHttpUrl(value){ return typeof value === 'string' && /^https?:\/\//.test(value.trim()); }
     function deckPreview(standing){ if(typeof standing?.decklist==='string' && standing.decklist.trim()) return standing.decklist.trim(); const commanders=getCommanders(standing); if(commanders.length) return 'Commanders\n' + commanders.join('\n'); return 'Decklist no disponible'; }
 
-    function buildTournamentSummary(payload){
+    // DESPUÉS
+function buildTournamentSummary(payload, tid){
+  const overrides = COMMANDER_OVERRIDES[tid] || {};
       const data=payload?.data || {};
       const standings=Array.isArray(payload?.standings)?payload.standings:[];
       const rounds=Array.isArray(payload?.rounds)?payload.rounds:[];
+    // DESPUÉS
       const normalizedStandings=standings.map(item=>{
-        const commanders=getCommanders(item);
+        const commanders=getCommanders(item, overrides[item.name]);
         return {
           ...item,
           commanders,
@@ -115,7 +150,7 @@ events: [
 const res=await fetch(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`);
         const data=await res.json();
         if(!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-        const summary=buildTournamentSummary(data);
+        const summary=buildTournamentSummary(data, tid);
         store.tournamentCache[tid]=summary;
         return summary;
       } catch(err){
