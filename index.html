@@ -110,7 +110,7 @@ function buildTournamentSummary(payload, tid){
           badge:item.badge || inferBadge(item.standing),
           winRateLabel:item.winRate!==undefined && item.winRate!==null ? `${(Number(item.winRate)*100).toFixed(1)}%` : '—',
           owrLabel:item.opponentWinRate!==undefined && item.opponentWinRate!==null ? `${(Number(item.opponentWinRate)*100).toFixed(1)}%` : '—',
-          decklistUrl:isHttpUrl(item.decklist) ? item.decklist.trim() : '',
+          decklistUrl:isHttpUrl(item.deckObj?.metadata?.importedFrom) ? item.deckObj.metadata.importedFrom.trim() : '',
           commanderLabel:commanders.join(' / ') || 'Sin comandante detectado',
           deckPreview:deckPreview(item)
         };
