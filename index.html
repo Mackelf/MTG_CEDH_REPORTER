@@ -154,19 +154,22 @@ const res=await fetch(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`)
         if(!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
         // NUEVO: completar V/D/E reales por jugador (gamesWon/gamesLost/gamesDrawn)
+        // Secuencial + delay para no chocar con el rate limit de topdeck.gg
         if(Array.isArray(data.standings)){
-          await Promise.all(data.standings.map(async player=>{
-            if(!player.id) return;
+          for(const player of data.standings){
+            if(!player.id) continue;
             try{
               const r=await fetch(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}&playerId=${encodeURIComponent(player.id)}`);
-              if(!r.ok) return;
-              const stats=await r.json();
-              player.gamesPlayed=stats.gamesPlayed;
-              player.gamesWon=stats.gamesWon;
-              player.gamesDrawn=stats.gamesDrawn;
-              player.gamesLost=stats.gamesLost;
+              if(r.ok){
+                const stats=await r.json();
+                player.gamesPlayed=stats.gamesPlayed;
+                player.gamesWon=stats.gamesWon;
+                player.gamesDrawn=stats.gamesDrawn;
+                player.gamesLost=stats.gamesLost;
+              }
             }catch(e){ /* si falla un jugador, seguimos con el resto */ }
-          }));
+            await new Promise(resolve=>setTimeout(resolve, 250));
+          }
         }
 
         const summary=buildTournamentSummary(data, tid);

@@ -1,0 +1,5 @@
+"$schema" = "./node_modules/wrangler/config-schema.json"
+name = "edh-proxy-topdeck"
+main = "worker.js"
+# Set this to today's date
+compatibility_date = "2026-07-01"
