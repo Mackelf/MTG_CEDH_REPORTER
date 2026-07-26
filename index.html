@@ -121,9 +121,9 @@ function buildTournamentSummary(payload, tid){
         const labels=player.commanders.length?player.commanders:['Sin comandante detectado'];
         labels.forEach(name=>{
           if(!commanderMap[name]) commanderMap[name]={name,count:0,players:[],bestStanding:null,wins:0,losses:0,draws:0,totalGames:0};
-          const wins=parseInt(player.wins ?? player.V ?? 0);
-          const losses=parseInt(player.losses ?? player.D ?? 0);
-          const draws=parseInt(player.draws ?? player.E ?? 0);
+          const wins=parseInt(player.gamesWon ?? player.wins ?? player.V ?? 0);
+          const losses=parseInt(player.gamesLost ?? player.losses ?? player.D ?? 0);
+          const draws=parseInt(player.gamesDrawn ?? player.draws ?? player.E ?? 0);
           commanderMap[name].count += 1;
           commanderMap[name].players.push(player.name);
           commanderMap[name].wins += wins;
@@ -152,6 +152,23 @@ function buildTournamentSummary(payload, tid){
 const res=await fetch(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`);
         const data=await res.json();
         if(!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+        // NUEVO: completar V/D/E reales por jugador (gamesWon/gamesLost/gamesDrawn)
+        if(Array.isArray(data.standings)){
+          await Promise.all(data.standings.map(async player=>{
+            if(!player.id) return;
+            try{
+              const r=await fetch(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}&playerId=${encodeURIComponent(player.id)}`);
+              if(!r.ok) return;
+              const stats=await r.json();
+              player.gamesPlayed=stats.gamesPlayed;
+              player.gamesWon=stats.gamesWon;
+              player.gamesDrawn=stats.gamesDrawn;
+              player.gamesLost=stats.gamesLost;
+            }catch(e){ /* si falla un jugador, seguimos con el resto */ }
+          }));
+        }
+
         const summary=buildTournamentSummary(data, tid);
         store.tournamentCache[tid]=summary;
         return summary;
