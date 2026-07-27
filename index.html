@@ -86,7 +86,7 @@ events: [
 function getCommanders(standing, overrideName){
   const c=standing?.deckObj?.Commanders;
   if(c && typeof c==='object'){
-    const names=Object.keys(c).filter(Boolean);
+    const names=Object.keys(c).filter(Boolean).sort((a,b)=>a.localeCompare(b));
     if(names.length) return names;
   }
   if(overrideName) return [overrideName];
@@ -118,22 +118,20 @@ function buildTournamentSummary(payload, tid){
 
       const commanderMap={};
       normalizedStandings.forEach(player=>{
-        const labels=player.commanders.length?player.commanders:['Sin comandante detectado'];
-        labels.forEach(name=>{
-          if(!commanderMap[name]) commanderMap[name]={name,count:0,players:[],bestStanding:null,wins:0,losses:0,draws:0,totalGames:0};
-          const wins=parseInt(player.gamesWon ?? player.wins ?? player.V ?? 0);
-          const losses=parseInt(player.gamesLost ?? player.losses ?? player.D ?? 0);
-          const draws=parseInt(player.gamesDrawn ?? player.draws ?? player.E ?? 0);
-          commanderMap[name].count += 1;
-          commanderMap[name].players.push(player.name);
-          commanderMap[name].wins += wins;
-          commanderMap[name].losses += losses;
-          commanderMap[name].draws += draws;
-          commanderMap[name].totalGames += wins+losses+draws;
-          if(player.standing!==undefined && player.standing!==null){
-            commanderMap[name].bestStanding = commanderMap[name].bestStanding===null ? player.standing : Math.min(commanderMap[name].bestStanding, player.standing);
-          }
-        });
+        const name=player.commanderLabel || 'Sin comandante detectado';
+        if(!commanderMap[name]) commanderMap[name]={name,count:0,players:[],bestStanding:null,wins:0,losses:0,draws:0,totalGames:0};
+        const wins=parseInt(player.gamesWon ?? player.wins ?? player.V ?? 0);
+        const losses=parseInt(player.gamesLost ?? player.losses ?? player.D ?? 0);
+        const draws=parseInt(player.gamesDrawn ?? player.draws ?? player.E ?? 0);
+        commanderMap[name].count += 1;
+        commanderMap[name].players.push(player.name);
+        commanderMap[name].wins += wins;
+        commanderMap[name].losses += losses;
+        commanderMap[name].draws += draws;
+        commanderMap[name].totalGames += wins+losses+draws;
+        if(player.standing!==undefined && player.standing!==null){
+          commanderMap[name].bestStanding = commanderMap[name].bestStanding===null ? player.standing : Math.min(commanderMap[name].bestStanding, player.standing);
+        }
       });
 
       const metagame=Object.values(commanderMap)
@@ -143,13 +141,24 @@ function buildTournamentSummary(payload, tid){
       return { data, rounds, standings: normalizedStandings, metagame, kpis:{ totalPlayers: normalizedStandings.length, uniqueCommanders: metagame.filter(x=>x.name!=='Sin comandante detectado').length, rounds: rounds.length, topCommander: metagame[0]?.name || '—' } };
     }
 
+    // NUEVO: fetch con reintento y backoff exponencial para 429 (rate limit)
+    async function fetchWithRetry(url, maxRetries=3){
+      for(let attempt=0; attempt<=maxRetries; attempt++){
+        const r=await fetch(url);
+        if(r.status!==429) return r;
+        const wait=800*Math.pow(2, attempt); // 800ms, 1.6s, 3.2s, 6.4s
+        await new Promise(resolve=>setTimeout(resolve, wait));
+      }
+      return fetch(url); // último intento, se deja pasar el resultado (ok o no)
+    }
+
     async function loadTournamentData(tid){
       if(store.tournamentCache[tid]) return store.tournamentCache[tid];
       store.loadingByTid[tid]=true;
       store.errorByTid[tid]='';
       try{
         // DESPUÉS
-const res=await fetch(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`);
+const res=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`);
         const data=await res.json();
         if(!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
@@ -159,7 +168,7 @@ const res=await fetch(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`)
           for(const player of data.standings){
             if(!player.id) continue;
             try{
-              const r=await fetch(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}&playerId=${encodeURIComponent(player.id)}`);
+              const r=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}&playerId=${encodeURIComponent(player.id)}`);
               if(r.ok){
                 const stats=await r.json();
                 player.gamesPlayed=stats.gamesPlayed;
@@ -168,7 +177,7 @@ const res=await fetch(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`)
                 player.gamesLost=stats.gamesLost;
               }
             }catch(e){ /* si falla un jugador, seguimos con el resto */ }
-            await new Promise(resolve=>setTimeout(resolve, 250));
+            await new Promise(resolve=>setTimeout(resolve, 500));
           }
         }
 
