@@ -54,7 +54,7 @@ export default {
       const data = await tdRes.text();
       const response = new Response(data, {
         status: tdRes.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
       });
 
       // Solo cachea respuestas exitosas, para no guardar errores/rate-limits

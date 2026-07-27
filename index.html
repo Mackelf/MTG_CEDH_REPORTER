@@ -95,15 +95,42 @@ function getCommanders(standing, overrideName){
     function isHttpUrl(value){ return typeof value === 'string' && /^https?:\/\//.test(value.trim()); }
     function deckPreview(standing){ if(typeof standing?.decklist==='string' && standing.decklist.trim()) return standing.decklist.trim(); const commanders=getCommanders(standing); if(commanders.length) return 'Commanders\n' + commanders.join('\n'); return 'Decklist no disponible'; }
 
+    // NUEVO: calcula V/D/E directamente desde rounds/tables (winner_id), sin pegarle a la API por jugador
+    function computeStatsFromRounds(rounds){
+      const stats={};
+      function ensure(id){
+        if(!stats[id]) stats[id]={ wins:0, losses:0, draws:0, gamesPlayed:0 };
+        return stats[id];
+      }
+      (rounds || []).forEach(round=>{
+        (round.tables || []).forEach(table=>{
+          const players=table.players || [];
+          if(players.length < 2) return; // bye o mesa incompleta, no cuenta como partida real
+          if(table.status && table.status !== 'Completed') return; // ronda no jugada aún
+          players.forEach(p=>{
+            if(!p.id) return;
+            const s=ensure(p.id);
+            s.gamesPlayed += 1;
+            if(table.winner_id && p.id === table.winner_id) s.wins += 1;
+            else if(!table.winner_id) s.draws += 1; // sin ganador declarado = empate para la mesa
+            else s.losses += 1;
+          });
+        });
+      });
+      return stats;
+    }
+
     // DESPUÉS
 function buildTournamentSummary(payload, tid){
   const overrides = COMMANDER_OVERRIDES[tid] || {};
       const data=payload?.data || {};
       const standings=Array.isArray(payload?.standings)?payload.standings:[];
       const rounds=Array.isArray(payload?.rounds)?payload.rounds:[];
+      const roundsStats=computeStatsFromRounds(rounds);
     // DESPUÉS
       const normalizedStandings=standings.map(item=>{
         const commanders=getCommanders(item, overrides[item.name]);
+        const fromRounds=roundsStats[item.id];
         return {
           ...item,
           commanders,
@@ -112,7 +139,12 @@ function buildTournamentSummary(payload, tid){
           owrLabel:item.opponentWinRate!==undefined && item.opponentWinRate!==null ? `${(Number(item.opponentWinRate)*100).toFixed(1)}%` : '—',
           decklistUrl:isHttpUrl(item.deckObj?.metadata?.importedFrom) ? item.deckObj.metadata.importedFrom.trim() : '',
           commanderLabel:commanders.join(' / ') || 'Sin comandante detectado',
-          deckPreview:deckPreview(item)
+          deckPreview:deckPreview(item),
+          // NUEVO: V/D/E calculados desde rounds, con fallback a lo que ya viniera en el standing
+          gamesWon: fromRounds ? fromRounds.wins : item.gamesWon,
+          gamesLost: fromRounds ? fromRounds.losses : item.gamesLost,
+          gamesDrawn: fromRounds ? fromRounds.draws : item.gamesDrawn,
+          gamesPlayed: fromRounds ? fromRounds.gamesPlayed : item.gamesPlayed
         };
       }).sort((a,b)=>(a.standing ?? 999)-(b.standing ?? 999));
 
@@ -167,31 +199,6 @@ function buildTournamentSummary(payload, tid){
           const res=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`);
           const data=await res.json();
           if(!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-
-          // NUEVO: completar V/D/E reales por jugador (gamesWon/gamesLost/gamesDrawn)
-          // Lotes en paralelo (2 a la vez) respetando el límite de 100 req/min de topdeck.gg
-          if(Array.isArray(data.standings)){
-            const withId=data.standings.filter(p=>p.id);
-            const BATCH_SIZE=2;
-            for(let i=0; i<withId.length; i+=BATCH_SIZE){
-              const batch=withId.slice(i, i+BATCH_SIZE);
-              await Promise.all(batch.map(async player=>{
-                try{
-                  const r=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}&playerId=${encodeURIComponent(player.id)}`);
-                  if(r.ok){
-                    const stats=await r.json();
-                    player.gamesPlayed=stats.gamesPlayed;
-                    player.gamesWon=stats.gamesWon;
-                    player.gamesDrawn=stats.gamesDrawn;
-                    player.gamesLost=stats.gamesLost;
-                  }
-                }catch(e){ /* si falla un jugador, seguimos con el resto */ }
-              }));
-              if(i+BATCH_SIZE < withId.length){
-                await new Promise(resolve=>setTimeout(resolve, 1700));
-              }
-            }
-          }
 
           const summary=buildTournamentSummary(data, tid);
           store.tournamentCache[tid]=summary;
