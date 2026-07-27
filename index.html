@@ -166,7 +166,7 @@ const res=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponen
         // Lotes en paralelo (4 a la vez) en vez de uno por uno, para no ser tan lento
         if(Array.isArray(data.standings)){
           const withId=data.standings.filter(p=>p.id);
-          const BATCH_SIZE=4;
+          const BATCH_SIZE=2;
           for(let i=0; i<withId.length; i+=BATCH_SIZE){
             const batch=withId.slice(i, i+BATCH_SIZE);
             await Promise.all(batch.map(async player=>{
@@ -182,7 +182,7 @@ const res=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponen
               }catch(e){ /* si falla un jugador, seguimos con el resto */ }
             }));
             if(i+BATCH_SIZE < withId.length){
-              await new Promise(resolve=>setTimeout(resolve, 200));
+              await new Promise(resolve=>setTimeout(resolve, 1700)); // ~70 req/min con BATCH_SIZE=2, dentro del límite de 100/min de topdeck.gg
             }
           }
         }
