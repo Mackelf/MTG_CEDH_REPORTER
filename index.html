@@ -38,7 +38,7 @@
   <div id="app"></div>
   <footer>Mario Canto · 2026 · Dashboard Commander · Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener noreferrer">TopDeck.gg</a></footer>
   <script>
-    const { createApp, ref, computed, onMounted } = Vue;
+    const { createApp, ref, computed, onMounted, watch } = Vue;
     const { createRouter, createWebHashHistory, RouterLink, useRoute } = VueRouter;
 
     // DESPUÉS
@@ -308,8 +308,50 @@ function buildTournamentSummary(payload, tid){
       `
     };
 
+    // NUEVO: imágenes de comandantes vía Scryfall API, con caché en localStorage
+    // (mismo patrón que el RCQ Reporter: sin header User-Agent custom, porque rompe CORS)
+    const SCRYFALL_CACHE_KEY='scryfallCommanderImages';
+    function loadScryfallCache(){
+      try{ return JSON.parse(localStorage.getItem(SCRYFALL_CACHE_KEY)) || {}; }
+      catch(e){ return {}; }
+    }
+    const scryfallCache=loadScryfallCache();
+    function saveScryfallCache(){
+      try{ localStorage.setItem(SCRYFALL_CACHE_KEY, JSON.stringify(scryfallCache)); }catch(e){ /* localStorage lleno o bloqueado, seguimos sin cachear */ }
+    }
+    async function getCommanderImage(name){
+      if(!name) return null;
+      if(scryfallCache[name] !== undefined) return scryfallCache[name];
+      try{
+        const res=await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`);
+        if(!res.ok){ scryfallCache[name]=null; saveScryfallCache(); return null; }
+        const card=await res.json();
+        const img=card.image_uris?.art_crop || card.card_faces?.[0]?.image_uris?.art_crop || null;
+        scryfallCache[name]=img;
+        saveScryfallCache();
+        return img;
+      }catch(e){
+        return null;
+      }
+    }
+
+    async function loadCommanderImages(metagame, imagesRef){
+      for(const arch of metagame){
+        const firstCommander=(arch.name || '').split(' / ')[0];
+        if(!firstCommander || firstCommander==='Sin comandante detectado' || imagesRef.value[arch.name]) continue;
+        const img=await getCommanderImage(firstCommander);
+        imagesRef.value={ ...imagesRef.value, [arch.name]: img };
+        await new Promise(resolve=>setTimeout(resolve, 100)); // ritmo prudente para Scryfall
+      }
+    }
+
     const Metagame={
-      setup(){ return { ...useTournamentSummary(), formatUnixDate }; },
+      setup(){
+        const base=useTournamentSummary();
+        const commanderImages=ref({});
+        watch(()=>base.summary.value, (val)=>{ if(val?.metagame) loadCommanderImages(val.metagame, commanderImages); });
+        return { ...base, formatUnixDate, commanderImages };
+      },
       template:`
         <div>
           <div v-if="loading" class="text-muted">Cargando metagame...</div>
@@ -326,6 +368,7 @@ function buildTournamentSummary(payload, tid){
             <div class="row row-cols-2 row-cols-md-4 g-2">
               <div class="col" v-for="arch in summary.metagame" :key="arch.name">
                 <div class="card h-100">
+                  <img v-if="commanderImages[arch.name]" :src="commanderImages[arch.name]" :alt="arch.name" class="card-img-top" style="height:90px;object-fit:cover">
                   <div class="card-body p-2">
                     <div class="d-flex align-items-start gap-1 mb-2">
                       <div class="d-flex flex-wrap gap-1 flex-shrink-0">
