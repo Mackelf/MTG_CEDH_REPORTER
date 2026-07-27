@@ -152,50 +152,61 @@ function buildTournamentSummary(payload, tid){
       return fetch(url); // último intento, se deja pasar el resultado (ok o no)
     }
 
-    async function loadTournamentData(tid){
-      if(store.tournamentCache[tid]) return store.tournamentCache[tid];
-      store.loadingByTid[tid]=true;
-      store.errorByTid[tid]='';
-      try{
-        // DESPUÉS
-const res=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`);
-        const data=await res.json();
-        if(!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+    // NUEVO: guarda la promesa en curso por tid, así dos llamadas casi simultáneas
+    // (ej. Standing y Metagame montando juntos) reusan la misma request en vez de duplicarla
+    const pendingRequests={};
 
-        // NUEVO: completar V/D/E reales por jugador (gamesWon/gamesLost/gamesDrawn)
-        // Lotes en paralelo (4 a la vez) en vez de uno por uno, para no ser tan lento
-        if(Array.isArray(data.standings)){
-          const withId=data.standings.filter(p=>p.id);
-          const BATCH_SIZE=2;
-          for(let i=0; i<withId.length; i+=BATCH_SIZE){
-            const batch=withId.slice(i, i+BATCH_SIZE);
-            await Promise.all(batch.map(async player=>{
-              try{
-                const r=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}&playerId=${encodeURIComponent(player.id)}`);
-                if(r.ok){
-                  const stats=await r.json();
-                  player.gamesPlayed=stats.gamesPlayed;
-                  player.gamesWon=stats.gamesWon;
-                  player.gamesDrawn=stats.gamesDrawn;
-                  player.gamesLost=stats.gamesLost;
-                }
-              }catch(e){ /* si falla un jugador, seguimos con el resto */ }
-            }));
-            if(i+BATCH_SIZE < withId.length){
-              await new Promise(resolve=>setTimeout(resolve, 1700)); // ~70 req/min con BATCH_SIZE=2, dentro del límite de 100/min de topdeck.gg
+    function loadTournamentData(tid){
+      if(store.tournamentCache[tid]) return Promise.resolve(store.tournamentCache[tid]);
+      if(pendingRequests[tid]) return pendingRequests[tid];
+
+      const promise=(async()=>{
+        store.loadingByTid[tid]=true;
+        store.errorByTid[tid]='';
+        try{
+          const res=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`);
+          const data=await res.json();
+          if(!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+          // NUEVO: completar V/D/E reales por jugador (gamesWon/gamesLost/gamesDrawn)
+          // Lotes en paralelo (2 a la vez) respetando el límite de 100 req/min de topdeck.gg
+          if(Array.isArray(data.standings)){
+            const withId=data.standings.filter(p=>p.id);
+            const BATCH_SIZE=2;
+            for(let i=0; i<withId.length; i+=BATCH_SIZE){
+              const batch=withId.slice(i, i+BATCH_SIZE);
+              await Promise.all(batch.map(async player=>{
+                try{
+                  const r=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}&playerId=${encodeURIComponent(player.id)}`);
+                  if(r.ok){
+                    const stats=await r.json();
+                    player.gamesPlayed=stats.gamesPlayed;
+                    player.gamesWon=stats.gamesWon;
+                    player.gamesDrawn=stats.gamesDrawn;
+                    player.gamesLost=stats.gamesLost;
+                  }
+                }catch(e){ /* si falla un jugador, seguimos con el resto */ }
+              }));
+              if(i+BATCH_SIZE < withId.length){
+                await new Promise(resolve=>setTimeout(resolve, 1700));
+              }
             }
           }
-        }
 
-        const summary=buildTournamentSummary(data, tid);
-        store.tournamentCache[tid]=summary;
-        return summary;
-      } catch(err){
-        store.errorByTid[tid]=err.message || 'No se pudo cargar el torneo';
-        throw err;
-      } finally {
-        store.loadingByTid[tid]=false;
-      }
+          const summary=buildTournamentSummary(data, tid);
+          store.tournamentCache[tid]=summary;
+          return summary;
+        } catch(err){
+          store.errorByTid[tid]=err.message || 'No se pudo cargar el torneo';
+          throw err;
+        } finally {
+          store.loadingByTid[tid]=false;
+          delete pendingRequests[tid];
+        }
+      })();
+
+      pendingRequests[tid]=promise;
+      return promise;
     }
 
     const Home={
