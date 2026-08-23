@@ -1,214 +1,644 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Commander Dashboard - RCQ Reporter Style</title>
-  <link rel="icon" href="data:,">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-  <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.prod.js"></script>
-  <style>
-    body{background:linear-gradient(135deg,#87CEEB 0%,#B0E0E6 100%);min-height:100vh}
-    .navbar-custom{background:white!important;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-    .navbar-custom .btn-outline-secondary{border:2px solid #000;color:#000;border-radius:25px;font-weight:600;padding:8px 20px;transition:all .3s ease}
-    .navbar-custom .btn-outline-secondary:hover{background-color:#87CEEB;border-color:#000;color:#000}
-    .navbar-custom .btn-outline-primary{border:2px solid #87CEEB;color:#000;background:white;border-radius:25px;font-weight:600;padding:8px 20px;transition:all .3s ease}
-    .navbar-custom .btn-outline-primary:hover,.navbar-custom .btn-outline-primary.router-link-active{background-color:#87CEEB;border-color:#87CEEB;color:#000;transform:translateY(-2px);box-shadow:0 4px 12px rgba(135,206,235,.3)}
-    .badge-gold{background-color:#FFD700;color:#000;font-weight:700}.badge-silver{background-color:#C0C0C0;color:#000;font-weight:700}.badge-bronze{background-color:#CD7F32;color:#fff;font-weight:700}.badge-green{background-color:#87CEEB;color:#000;font-weight:700}
-    .main-container{background:white;border-radius:16px;padding:2rem;box-shadow:0 4px 16px rgba(0,0,0,.1)}
-    .table{border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05)}
-    .table-dark{background-color:#000!important;border-color:#000!important}.table-dark th{color:white;font-weight:700;padding:1rem;border-color:#333!important}
-    .table-hover tbody tr:hover{background-color:rgba(135,206,235,.15)}
-    .table tbody td{padding:.75rem 1rem;vertical-align:middle}.table tbody td a{color:#0d6efd;font-weight:600;text-decoration:none}.table tbody td a:hover{color:#000;text-decoration:underline}
-    .card{border:2px solid #000;border-radius:16px;overflow:hidden;transition:all .3s ease}.card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.15)}
-    .card-title{color:#000;font-weight:700}.meta-stat-label{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#888}.meta-stat-value{font-size:1.1rem;font-weight:800;line-height:1}
-    .vde-pill{display:inline-block;font-size:.72rem;font-weight:700;padding:1px 6px;border-radius:999px}.vde-pill--win{background:#d4edda;color:#1a6630}.vde-pill--loss{background:#f8d7da;color:#842029}.vde-pill--draw{background:#e9ecef;color:#495057}
-    .home-container{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#87CEEB 0%,#B0E0E6 100%);padding:2rem}.home-card{background:white!important;border-radius:24px!important;padding:3rem!important;box-shadow:0 8px 32px rgba(0,0,0,.1)!important;max-width:700px;width:100%}
-    .home-title{color:#000!important;font-weight:bold!important;text-align:center;margin-bottom:.75rem!important}.home-subtitle{text-align:center;color:#6c757d;margin-bottom:2rem}
-    .stores-list{display:flex;flex-direction:column;gap:1rem}.store-group{margin-bottom:1rem}.store-button{display:flex!important;align-items:center!important;gap:1rem!important;padding:10px 20px!important;border:2px solid #000!important;border-radius:50px!important;background:white!important;color:#000!important;font-size:1.1rem!important;font-weight:600!important;text-decoration:none!important;transition:all .3s ease!important;width:fit-content}.store-button:hover{background-color:#87CEEB!important;transform:translateY(-2px)!important;box-shadow:0 4px 12px rgba(0,0,0,.15)!important;color:#000!important}
-    .store-dates{list-style:none;padding:.25rem 0 0 2rem;margin:0;display:grid;gap:.75rem}.store-dates li{background:rgba(255,255,255,.65);border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:.8rem 1rem}.store-datemeta{color:#6c757d;font-size:.85rem;margin-left:.25rem}
-    .summary-kpi{background:linear-gradient(135deg,#f8f9fa 0%,#ffffff 100%);border:2px solid #000;border-radius:18px;padding:1rem;text-align:center;height:100%}.summary-kpi-label{font-size:.75rem;text-transform:uppercase;font-weight:700;color:#6c757d;letter-spacing:.04em}.summary-kpi-value{font-size:1.7rem;font-weight:800;color:#000;line-height:1.1;margin-top:.35rem}
-    .page-title{color:#000;font-weight:800;margin-bottom:.25rem}.page-subtitle{color:#6c757d} footer{background:transparent;color:#000;font-weight:600;text-align:center;padding:2rem;margin-top:2rem}
-    @media (max-width:768px){.home-card{padding:2rem!important}.main-container{padding:1rem}.store-dates{padding-left:1rem}}
-  </style>
-</head>
-<body>
-  <div id="app"></div>
-  <footer>Mario Canto · 2026 · Dashboard Commander · Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener noreferrer">TopDeck.gg</a></footer>
-  <script>
-    const { createApp, ref, computed, onMounted } = Vue;
-    const { createRouter, createWebHashHistory, RouterLink, useRoute } = VueRouter;
-
-    // DESPUÉS
-// DESPUÉS
-const API_CONFIG = { proxyBase: 'https://edh-proxy-topdeck.mac-maxwell.workers.dev' };
-
-// Overrides manuales para torneos donde la API no trae el commander.
-// Clave = tid del torneo, valor = { "Nombre jugador": "Commander" }
-const COMMANDER_OVERRIDES = {
-  'torneo-commander-landfall-bracket-3-0507': {
-    'Jonathan mayorinca': 'Edgar Markov',
-    'Sofi': "Longshot, Rebel Bowman",
-    'Juan Godoy': 'Auntie Ool, Cursewretch',
-    'Vicky': 'Meren of Clan Nel Toth',
-    'Ricardo Hidalgo': 'Gargos, Vicious Watcher',
-    'Sellenite': 'Shiko, Paragon of the Way',
-    'Erickson tapia': 'Cloud, Midgar Mercenary',
-    'Alejandro Guerrero': 'Quintorius, History Chaser',
-    'Jesus Bastias': 'Solphim, Mayhem Dominus',
-    'jose': 'Korvold, Fae-Cursed King',
-    'Gabriel Guerrero': "Y'shtola, Night's Blessed",
-    'alex soto': "Sythis, Harvest's Hand",
-    'Antonio García': 'Giada, Font of Hope',
-    'Ale': 'Auntie Ool, Cursewretch',
-    'Maxiwis': 'Grand Arbiter Augustin IV',
-    'Francisco Coddou': 'Winota, Joiner of Forces'
-  }
-};
-    const store = Vue.reactive({
-      events: [{ tid:'clasificatorio-nacional-cedh-vina-del-mar', store:'Todo Freak', storeId:'todo-freak', city:'Viña del Mar', format:'EDH', idLabel:'Clasificatorio Nacional cEDH', fecha:'2026-07-05', eventUrl:'https://topdeck.gg/event/clasificatorio-nacional-cedh-vina-del-mar', social:'https://www.instagram.com/todofreakstore/' }],// DESPUÉS
-events: [
-  { tid:'clasificatorio-nacional-cedh-vina-del-mar', store:'Todo Freak', storeId:'todo-freak', city:'Viña del Mar', format:'EDH', idLabel:'Clasificatorio Nacional cEDH', fecha:'2026-07-05', eventUrl:'https://topdeck.gg/event/clasificatorio-nacional-cedh-vina-del-mar', social:'https://www.instagram.com/todofreakstore/' },
-  { tid:'torneo-commander-landfall-bracket-3-0507', store:'La Posada del Dado', storeId:'la-posada-del-dado', city:'Quillota', format:'EDH', idLabel:'Torneo Commander Landfall Bracket 3', fecha:'2026-07-05', eventUrl:'https://topdeck.gg/bracket/torneo-commander-landfall-bracket-3-0507', social:'https://www.instagram.com/laposadadeldado/' },
-  { tid:'2do-clasificatorio-nacional-cedh-landfall', store:'Landfall', storeId:'landfall', city:'Santiago', format:'EDH', idLabel:'2do Clasificatorio Nacional cEDH', fecha:'2026-07-25', eventUrl:'https://topdeck.gg/event/2do-clasificatorio-nacional-cedh-landfall', social:'https://www.instagram.com/mtg_landfall/' }
-
-],
-      tournamentCache: {}, loadingByTid: {}, errorByTid: {}
-    });
-
-    function formatDateFriendly(dateString){ if(!dateString) return 'Sin fecha'; return new Date(dateString + 'T00:00:00').toLocaleDateString('es-CL',{year:'numeric',month:'long',day:'numeric'}); }
-    function formatUnixDate(unix){ if(!unix) return 'Sin fecha'; return new Date(unix * 1000).toLocaleDateString('es-CL',{year:'numeric',month:'long',day:'numeric'}); }
-    function inferBadge(standing){ if(standing===1) return '1st'; if(standing===2) return '2nd'; if(standing<=4) return 'T4'; if(standing<=8) return 'T8'; return null; }
-    function badgeClass(badge){ const map={'1st':'badge-gold','2nd':'badge-silver','T4':'badge-bronze','T8':'badge-green'}; return map[badge] || 'text-bg-secondary'; }
-   // DESPUÉS
-function getCommanders(standing, overrideName){
-  const c=standing?.deckObj?.Commanders;
-  if(c && typeof c==='object'){
-    const names=Object.keys(c).filter(Boolean).sort((a,b)=>a.localeCompare(b));
-    if(names.length) return names;
-  }
-  if(overrideName) return [overrideName];
-  return [];
-}
-    function isHttpUrl(value){ return typeof value === 'string' && /^https?:\/\//.test(value.trim()); }
-    function deckPreview(standing){ if(typeof standing?.decklist==='string' && standing.decklist.trim()) return standing.decklist.trim(); const commanders=getCommanders(standing); if(commanders.length) return 'Commanders\n' + commanders.join('\n'); return 'Decklist no disponible'; }
-
-    // DESPUÉS
-function buildTournamentSummary(payload, tid){
-  const overrides = COMMANDER_OVERRIDES[tid] || {};
-      const data=payload?.data || {};
-      const standings=Array.isArray(payload?.standings)?payload.standings:[];
-      const rounds=Array.isArray(payload?.rounds)?payload.rounds:[];
-    // DESPUÉS
-      const normalizedStandings=standings.map(item=>{
-        const commanders=getCommanders(item, overrides[item.name]);
-        return {
-          ...item,
-          commanders,
-          badge:item.badge || inferBadge(item.standing),
-          winRateLabel:item.winRate!==undefined && item.winRate!==null ? `${(Number(item.winRate)*100).toFixed(1)}%` : '—',
-          owrLabel:item.opponentWinRate!==undefined && item.opponentWinRate!==null ? `${(Number(item.opponentWinRate)*100).toFixed(1)}%` : '—',
-          decklistUrl:isHttpUrl(item.deckObj?.metadata?.importedFrom) ? item.deckObj.metadata.importedFrom.trim() : '',
-          commanderLabel:commanders.join(' / ') || 'Sin comandante detectado',
-          deckPreview:deckPreview(item)
-        };
-      }).sort((a,b)=>(a.standing ?? 999)-(b.standing ?? 999));
-
-      const commanderMap={};
-      normalizedStandings.forEach(player=>{
-        const name=player.commanderLabel || 'Sin comandante detectado';
-        if(!commanderMap[name]) commanderMap[name]={name,count:0,players:[],bestStanding:null,wins:0,losses:0,draws:0,totalGames:0};
-        const wins=parseInt(player.gamesWon ?? player.wins ?? player.V ?? 0);
-        const losses=parseInt(player.gamesLost ?? player.losses ?? player.D ?? 0);
-        const draws=parseInt(player.gamesDrawn ?? player.draws ?? player.E ?? 0);
-        commanderMap[name].count += 1;
-        commanderMap[name].players.push(player.name);
-        commanderMap[name].wins += wins;
-        commanderMap[name].losses += losses;
-        commanderMap[name].draws += draws;
-        commanderMap[name].totalGames += wins+losses+draws;
-        if(player.standing!==undefined && player.standing!==null){
-          commanderMap[name].bestStanding = commanderMap[name].bestStanding===null ? player.standing : Math.min(commanderMap[name].bestStanding, player.standing);
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Commander Dashboard - RCQ Reporter Style</title>
+    <link rel="icon" href="data:," />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.prod.js"></script>
+    <style>
+      body {
+        background: linear-gradient(135deg, #87ceeb 0%, #b0e0e6 100%);
+        min-height: 100vh;
+      }
+      .navbar-custom {
+        background: white !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .navbar-custom .btn-outline-secondary {
+        border: 2px solid #000;
+        color: #000;
+        border-radius: 25px;
+        font-weight: 600;
+        padding: 8px 20px;
+        transition: all 0.3s ease;
+      }
+      .navbar-custom .btn-outline-secondary:hover {
+        background-color: #87ceeb;
+        border-color: #000;
+        color: #000;
+      }
+      .navbar-custom .btn-outline-primary {
+        border: 2px solid #87ceeb;
+        color: #000;
+        background: white;
+        border-radius: 25px;
+        font-weight: 600;
+        padding: 8px 20px;
+        transition: all 0.3s ease;
+      }
+      .navbar-custom .btn-outline-primary:hover,
+      .navbar-custom .btn-outline-primary.router-link-active {
+        background-color: #87ceeb;
+        border-color: #87ceeb;
+        color: #000;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(135, 206, 235, 0.3);
+      }
+      .badge-gold {
+        background-color: #ffd700;
+        color: #000;
+        font-weight: 700;
+      }
+      .badge-silver {
+        background-color: #c0c0c0;
+        color: #000;
+        font-weight: 700;
+      }
+      .badge-bronze {
+        background-color: #cd7f32;
+        color: #fff;
+        font-weight: 700;
+      }
+      .badge-green {
+        background-color: #87ceeb;
+        color: #000;
+        font-weight: 700;
+      }
+      .main-container {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      }
+      .table {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+      .table-dark {
+        background-color: #000 !important;
+        border-color: #000 !important;
+      }
+      .table-dark th {
+        color: white;
+        font-weight: 700;
+        padding: 1rem;
+        border-color: #333 !important;
+      }
+      .table-hover tbody tr:hover {
+        background-color: rgba(135, 206, 235, 0.15);
+      }
+      .table tbody td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+      }
+      .table tbody td a {
+        color: #0d6efd;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .table tbody td a:hover {
+        color: #000;
+        text-decoration: underline;
+      }
+      .card {
+        border: 2px solid #000;
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+      }
+      .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      }
+      .card-title {
+        color: #000;
+        font-weight: 700;
+      }
+      .meta-stat-label {
+        font-size: 0.6rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #888;
+      }
+      .meta-stat-value {
+        font-size: 1.1rem;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .vde-pill {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 1px 6px;
+        border-radius: 999px;
+      }
+      .vde-pill--win {
+        background: #d4edda;
+        color: #1a6630;
+      }
+      .vde-pill--loss {
+        background: #f8d7da;
+        color: #842029;
+      }
+      .vde-pill--draw {
+        background: #e9ecef;
+        color: #495057;
+      }
+      .home-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #87ceeb 0%, #b0e0e6 100%);
+        padding: 2rem;
+      }
+      .home-card {
+        background: white !important;
+        border-radius: 24px !important;
+        padding: 3rem !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+        max-width: 700px;
+        width: 100%;
+      }
+      .home-title {
+        color: #000 !important;
+        font-weight: bold !important;
+        text-align: center;
+        margin-bottom: 0.75rem !important;
+      }
+      .home-subtitle {
+        text-align: center;
+        color: #6c757d;
+        margin-bottom: 2rem;
+      }
+      .stores-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .store-group {
+        margin-bottom: 1rem;
+      }
+      .store-button {
+        display: flex !important;
+        align-items: center !important;
+        gap: 1rem !important;
+        padding: 10px 20px !important;
+        border: 2px solid #000 !important;
+        border-radius: 50px !important;
+        background: white !important;
+        color: #000 !important;
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        text-decoration: none !important;
+        transition: all 0.3s ease !important;
+        width: fit-content;
+      }
+      .store-button:hover {
+        background-color: #87ceeb !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        color: #000 !important;
+      }
+      .store-dates {
+        list-style: none;
+        padding: 0.25rem 0 0 2rem;
+        margin: 0;
+        display: grid;
+        gap: 0.75rem;
+      }
+      .store-dates li {
+        background: rgba(255, 255, 255, 0.65);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        padding: 0.8rem 1rem;
+      }
+      .store-datemeta {
+        color: #6c757d;
+        font-size: 0.85rem;
+        margin-left: 0.25rem;
+      }
+      .summary-kpi {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border: 2px solid #000;
+        border-radius: 18px;
+        padding: 1rem;
+        text-align: center;
+        height: 100%;
+      }
+      .summary-kpi-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #6c757d;
+        letter-spacing: 0.04em;
+      }
+      .summary-kpi-value {
+        font-size: 1.7rem;
+        font-weight: 800;
+        color: #000;
+        line-height: 1.1;
+        margin-top: 0.35rem;
+      }
+      .page-title {
+        color: #000;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+      }
+      .page-subtitle {
+        color: #6c757d;
+      }
+      footer {
+        background: transparent;
+        color: #000;
+        font-weight: 600;
+        text-align: center;
+        padding: 2rem;
+        margin-top: 2rem;
+      }
+      @media (max-width: 768px) {
+        .home-card {
+          padding: 2rem !important;
         }
+        .main-container {
+          padding: 1rem;
+        }
+        .store-dates {
+          padding-left: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <footer>
+      Mario Canto · 2026 · Dashboard Commander · Data provided by
+      <a href="https://topdeck.gg" target="_blank" rel="noopener noreferrer"
+        >TopDeck.gg</a
+      >
+    </footer>
+    <script>
+      const { createApp, ref, computed, onMounted } = Vue;
+      const { createRouter, createWebHashHistory, RouterLink, useRoute } =
+        VueRouter;
+
+      // DESPUÉS
+      // DESPUÉS
+      const API_CONFIG = {
+        proxyBase: "https://edh-proxy-topdeck.mac-maxwell.workers.dev",
+      };
+
+      // Overrides manuales para torneos donde la API no trae el commander.
+      // Clave = tid del torneo, valor = { "Nombre jugador": "Commander" }
+      const COMMANDER_OVERRIDES = {
+        "torneo-commander-landfall-bracket-3-0507": {
+          "Jonathan mayorinca": "Edgar Markov",
+          Sofi: "Longshot, Rebel Bowman",
+          "Juan Godoy": "Auntie Ool, Cursewretch",
+          Vicky: "Meren of Clan Nel Toth",
+          "Ricardo Hidalgo": "Gargos, Vicious Watcher",
+          Sellenite: "Shiko, Paragon of the Way",
+          "Erickson tapia": "Cloud, Midgar Mercenary",
+          "Alejandro Guerrero": "Quintorius, History Chaser",
+          "Jesus Bastias": "Solphim, Mayhem Dominus",
+          jose: "Korvold, Fae-Cursed King",
+          "Gabriel Guerrero": "Y'shtola, Night's Blessed",
+          "alex soto": "Sythis, Harvest's Hand",
+          "Antonio García": "Giada, Font of Hope",
+          Ale: "Auntie Ool, Cursewretch",
+          Maxiwis: "Grand Arbiter Augustin IV",
+          "Francisco Coddou": "Winota, Joiner of Forces",
+        },
+      };
+      const store = Vue.reactive({
+        events: [
+          {
+            tid: "clasificatorio-nacional-cedh-vina-del-mar",
+            store: "Todo Freak",
+            storeId: "todo-freak",
+            city: "Viña del Mar",
+            format: "EDH",
+            idLabel: "Clasificatorio Nacional cEDH",
+            fecha: "2026-07-05",
+            eventUrl:
+              "https://topdeck.gg/event/clasificatorio-nacional-cedh-vina-del-mar",
+            social: "https://www.instagram.com/todofreakstore/",
+          },
+        ], // DESPUÉS
+        events: [
+          {
+            tid: "clasificatorio-nacional-cedh-vina-del-mar",
+            store: "Todo Freak",
+            storeId: "todo-freak",
+            city: "Viña del Mar",
+            format: "EDH",
+            idLabel: "Clasificatorio Nacional cEDH",
+            fecha: "2026-07-05",
+            eventUrl:
+              "https://topdeck.gg/event/clasificatorio-nacional-cedh-vina-del-mar",
+            social: "https://www.instagram.com/todofreakstore/",
+          },
+          {
+            tid: "torneo-commander-landfall-bracket-3-0507",
+            store: "La Posada del Dado",
+            storeId: "la-posada-del-dado",
+            city: "Quillota",
+            format: "EDH",
+            idLabel: "Torneo Commander Landfall Bracket 3",
+            fecha: "2026-07-05",
+            eventUrl:
+              "https://topdeck.gg/bracket/torneo-commander-landfall-bracket-3-0507",
+            social: "https://www.instagram.com/laposadadeldado/",
+          },
+          {
+            tid: "2do-clasificatorio-nacional-cedh-landfall",
+            store: "Landfall",
+            storeId: "landfall",
+            city: "Santiago",
+            format: "EDH",
+            idLabel: "2do Clasificatorio Nacional cEDH",
+            fecha: "2026-07-25",
+            eventUrl:
+              "https://topdeck.gg/event/2do-clasificatorio-nacional-cedh-landfall",
+            social: "https://www.instagram.com/mtg_landfall/",
+          },
+          {
+            tid: "2do-clasificatorio-nacional-cedh-stack-surfers",
+            store: "Stack Surfers",
+            storeId: "stack-surfers",
+            city: "Santiago",
+            format: "EDH",
+            idLabel: "2do Clasificatorio Nacional cEDH",
+            fecha: "2026-08-22",
+            eventUrl:
+              "https://topdeck.gg/event/2do-clasificatorio-nacional-cedh-stack-surfers",
+            social: "https://www.instagram.com/cedhmelipilla/",
+          },
+        ],
+        tournamentCache: {},
+        loadingByTid: {},
+        errorByTid: {},
       });
 
-      const metagame=Object.values(commanderMap)
-        .map(entry=>({ ...entry, share: normalizedStandings.length ? entry.count/normalizedStandings.length : 0, winRate: entry.totalGames ? ((entry.wins/entry.totalGames)*100).toFixed(1) : 'NA' }))
-        .sort((a,b)=>b.count-a.count || (a.bestStanding ?? 999)-(b.bestStanding ?? 999));
-
-      return { data, rounds, standings: normalizedStandings, metagame, kpis:{ totalPlayers: normalizedStandings.length, uniqueCommanders: metagame.filter(x=>x.name!=='Sin comandante detectado').length, rounds: rounds.length, topCommander: metagame[0]?.name || '—' } };
-    }
-
-    // NUEVO: fetch con reintento y backoff exponencial para 429 (rate limit)
-    async function fetchWithRetry(url, maxRetries=3){
-      for(let attempt=0; attempt<=maxRetries; attempt++){
-        const r=await fetch(url);
-        if(r.status!==429) return r;
-        const wait=800*Math.pow(2, attempt); // 800ms, 1.6s, 3.2s, 6.4s
-        await new Promise(resolve=>setTimeout(resolve, wait));
+      function formatDateFriendly(dateString) {
+        if (!dateString) return "Sin fecha";
+        return new Date(dateString + "T00:00:00").toLocaleDateString("es-CL", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
       }
-      return fetch(url); // último intento, se deja pasar el resultado (ok o no)
-    }
+      function formatUnixDate(unix) {
+        if (!unix) return "Sin fecha";
+        return new Date(unix * 1000).toLocaleDateString("es-CL", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+      function inferBadge(standing) {
+        if (standing === 1) return "1st";
+        if (standing === 2) return "2nd";
+        if (standing <= 4) return "T4";
+        if (standing <= 8) return "T8";
+        return null;
+      }
+      function badgeClass(badge) {
+        const map = {
+          "1st": "badge-gold",
+          "2nd": "badge-silver",
+          T4: "badge-bronze",
+          T8: "badge-green",
+        };
+        return map[badge] || "text-bg-secondary";
+      }
+      // DESPUÉS
+      function getCommanders(standing, overrideName) {
+        const c = standing?.deckObj?.Commanders;
+        if (c && typeof c === "object") {
+          const names = Object.keys(c)
+            .filter(Boolean)
+            .sort((a, b) => a.localeCompare(b));
+          if (names.length) return names;
+        }
+        if (overrideName) return [overrideName];
+        return [];
+      }
+      function isHttpUrl(value) {
+        return typeof value === "string" && /^https?:\/\//.test(value.trim());
+      }
+      function deckPreview(standing) {
+        if (typeof standing?.decklist === "string" && standing.decklist.trim())
+          return standing.decklist.trim();
+        const commanders = getCommanders(standing);
+        if (commanders.length) return "Commanders\n" + commanders.join("\n");
+        return "Decklist no disponible";
+      }
 
-    async function loadTournamentData(tid){
-      if(store.tournamentCache[tid]) return store.tournamentCache[tid];
-      store.loadingByTid[tid]=true;
-      store.errorByTid[tid]='';
-      try{
+      // DESPUÉS
+      function buildTournamentSummary(payload, tid) {
+        const overrides = COMMANDER_OVERRIDES[tid] || {};
+        const data = payload?.data || {};
+        const standings = Array.isArray(payload?.standings)
+          ? payload.standings
+          : [];
+        const rounds = Array.isArray(payload?.rounds) ? payload.rounds : [];
         // DESPUÉS
-const res=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`);
-        const data=await res.json();
-        if(!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+        const normalizedStandings = standings
+          .map((item) => {
+            const commanders = getCommanders(item, overrides[item.name]);
+            return {
+              ...item,
+              commanders,
+              badge: item.badge || inferBadge(item.standing),
+              winRateLabel:
+                item.winRate !== undefined && item.winRate !== null
+                  ? `${(Number(item.winRate) * 100).toFixed(1)}%`
+                  : "—",
+              owrLabel:
+                item.opponentWinRate !== undefined &&
+                item.opponentWinRate !== null
+                  ? `${(Number(item.opponentWinRate) * 100).toFixed(1)}%`
+                  : "—",
+              decklistUrl: isHttpUrl(item.deckObj?.metadata?.importedFrom)
+                ? item.deckObj.metadata.importedFrom.trim()
+                : "",
+              commanderLabel:
+                commanders.join(" / ") || "Sin comandante detectado",
+              deckPreview: deckPreview(item),
+            };
+          })
+          .sort((a, b) => (a.standing ?? 999) - (b.standing ?? 999));
 
-        // NUEVO: completar V/D/E reales por jugador (gamesWon/gamesLost/gamesDrawn)
-        // Lotes en paralelo (4 a la vez) en vez de uno por uno, para no ser tan lento
-        if(Array.isArray(data.standings)){
-          const withId=data.standings.filter(p=>p.id);
-          const BATCH_SIZE=4;
-          for(let i=0; i<withId.length; i+=BATCH_SIZE){
-            const batch=withId.slice(i, i+BATCH_SIZE);
-            await Promise.all(batch.map(async player=>{
-              try{
-                const r=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}&playerId=${encodeURIComponent(player.id)}`);
-                if(r.ok){
-                  const stats=await r.json();
-                  player.gamesPlayed=stats.gamesPlayed;
-                  player.gamesWon=stats.gamesWon;
-                  player.gamesDrawn=stats.gamesDrawn;
-                  player.gamesLost=stats.gamesLost;
-                }
-              }catch(e){ /* si falla un jugador, seguimos con el resto */ }
-            }));
-            if(i+BATCH_SIZE < withId.length){
-              await new Promise(resolve=>setTimeout(resolve, 200));
+        const commanderMap = {};
+        normalizedStandings.forEach((player) => {
+          const name = player.commanderLabel || "Sin comandante detectado";
+          if (!commanderMap[name])
+            commanderMap[name] = {
+              name,
+              count: 0,
+              players: [],
+              bestStanding: null,
+              wins: 0,
+              losses: 0,
+              draws: 0,
+              totalGames: 0,
+            };
+          const wins = parseInt(
+            player.gamesWon ?? player.wins ?? player.V ?? 0,
+          );
+          const losses = parseInt(
+            player.gamesLost ?? player.losses ?? player.D ?? 0,
+          );
+          const draws = parseInt(
+            player.gamesDrawn ?? player.draws ?? player.E ?? 0,
+          );
+          commanderMap[name].count += 1;
+          commanderMap[name].players.push(player.name);
+          commanderMap[name].wins += wins;
+          commanderMap[name].losses += losses;
+          commanderMap[name].draws += draws;
+          commanderMap[name].totalGames += wins + losses + draws;
+          if (player.standing !== undefined && player.standing !== null) {
+            commanderMap[name].bestStanding =
+              commanderMap[name].bestStanding === null
+                ? player.standing
+                : Math.min(commanderMap[name].bestStanding, player.standing);
+          }
+        });
+
+        const metagame = Object.values(commanderMap)
+          .map((entry) => ({
+            ...entry,
+            share: normalizedStandings.length
+              ? entry.count / normalizedStandings.length
+              : 0,
+            winRate: entry.totalGames
+              ? ((entry.wins / entry.totalGames) * 100).toFixed(1)
+              : "NA",
+          }))
+          .sort(
+            (a, b) =>
+              b.count - a.count ||
+              (a.bestStanding ?? 999) - (b.bestStanding ?? 999),
+          );
+
+        return {
+          data,
+          rounds,
+          standings: normalizedStandings,
+          metagame,
+          kpis: {
+            totalPlayers: normalizedStandings.length,
+            uniqueCommanders: metagame.filter(
+              (x) => x.name !== "Sin comandante detectado",
+            ).length,
+            rounds: rounds.length,
+            topCommander: metagame[0]?.name || "—",
+          },
+        };
+      }
+
+      // NUEVO: fetch con reintento y backoff exponencial para 429 (rate limit)
+      async function fetchWithRetry(url, maxRetries = 3) {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          const r = await fetch(url);
+          if (r.status !== 429) return r;
+          const wait = 800 * Math.pow(2, attempt); // 800ms, 1.6s, 3.2s, 6.4s
+          await new Promise((resolve) => setTimeout(resolve, wait));
+        }
+        return fetch(url); // último intento, se deja pasar el resultado (ok o no)
+      }
+
+      async function loadTournamentData(tid) {
+        if (store.tournamentCache[tid]) return store.tournamentCache[tid];
+        store.loadingByTid[tid] = true;
+        store.errorByTid[tid] = "";
+        try {
+          // DESPUÉS
+          const res = await fetchWithRetry(
+            `${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`,
+          );
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+          // NUEVO: completar V/D/E reales por jugador (gamesWon/gamesLost/gamesDrawn)
+          // Lotes en paralelo (4 a la vez) en vez de uno por uno, para no ser tan lento
+          if (Array.isArray(data.standings)) {
+            const withId = data.standings.filter((p) => p.id);
+            const BATCH_SIZE = 4;
+            for (let i = 0; i < withId.length; i += BATCH_SIZE) {
+              const batch = withId.slice(i, i + BATCH_SIZE);
+              await Promise.all(
+                batch.map(async (player) => {
+                  try {
+                    const r = await fetchWithRetry(
+                      `${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}&playerId=${encodeURIComponent(player.id)}`,
+                    );
+                    if (r.ok) {
+                      const stats = await r.json();
+                      player.gamesPlayed = stats.gamesPlayed;
+                      player.gamesWon = stats.gamesWon;
+                      player.gamesDrawn = stats.gamesDrawn;
+                      player.gamesLost = stats.gamesLost;
+                    }
+                  } catch (e) {
+                    /* si falla un jugador, seguimos con el resto */
+                  }
+                }),
+              );
+              if (i + BATCH_SIZE < withId.length) {
+                await new Promise((resolve) => setTimeout(resolve, 200));
+              }
             }
           }
+
+          const summary = buildTournamentSummary(data, tid);
+          store.tournamentCache[tid] = summary;
+          return summary;
+        } catch (err) {
+          store.errorByTid[tid] = err.message || "No se pudo cargar el torneo";
+          throw err;
+        } finally {
+          store.loadingByTid[tid] = false;
         }
-
-        const summary=buildTournamentSummary(data, tid);
-        store.tournamentCache[tid]=summary;
-        return summary;
-      } catch(err){
-        store.errorByTid[tid]=err.message || 'No se pudo cargar el torneo';
-        throw err;
-      } finally {
-        store.loadingByTid[tid]=false;
       }
-    }
 
-    const Home={
-      components:{RouterLink},
-      setup(){
-        const storeGroups=computed(()=>{
-          const map={};
-          store.events.forEach(ev=>{ if(!map[ev.storeId]) map[ev.storeId]={id:ev.storeId,label:ev.store,social:ev.social,dates:[]}; map[ev.storeId].dates.push(ev); });
-          return Object.values(map).map(group=>({ ...group, dates: group.dates.sort((a,b)=>a.fecha.localeCompare(b.fecha)) }));
-        });
-        return { storeGroups, formatDateFriendly };
-      },
-      template:`
+      const Home = {
+        components: { RouterLink },
+        setup() {
+          const storeGroups = computed(() => {
+            const map = {};
+            store.events.forEach((ev) => {
+              if (!map[ev.storeId])
+                map[ev.storeId] = {
+                  id: ev.storeId,
+                  label: ev.store,
+                  social: ev.social,
+                  dates: [],
+                };
+              map[ev.storeId].dates.push(ev);
+            });
+            return Object.values(map).map((group) => ({
+              ...group,
+              dates: group.dates.sort((a, b) => a.fecha.localeCompare(b.fecha)),
+            }));
+          });
+          return { storeGroups, formatDateFriendly };
+        },
+        template: `
         <div class="home-container">
           <div class="home-card">
             <h1 class="home-title">Commander Reporter</h1>
@@ -231,29 +661,35 @@ const res=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponen
             </div>
           </div>
         </div>
-      `
-    };
+      `,
+      };
 
-    function useTournamentSummary(){
-      const route=useRoute();
-      const loading=ref(false);
-      const error=ref('');
-      const summary=ref(null);
-      async function init(){
-        if(!route.query.tid) return;
-        loading.value=true;
-        error.value='';
-        try{ summary.value=await loadTournamentData(route.query.tid); }
-        catch(err){ error.value=err.message || 'No se pudo cargar el torneo'; }
-        finally { loading.value=false; }
+      function useTournamentSummary() {
+        const route = useRoute();
+        const loading = ref(false);
+        const error = ref("");
+        const summary = ref(null);
+        async function init() {
+          if (!route.query.tid) return;
+          loading.value = true;
+          error.value = "";
+          try {
+            summary.value = await loadTournamentData(route.query.tid);
+          } catch (err) {
+            error.value = err.message || "No se pudo cargar el torneo";
+          } finally {
+            loading.value = false;
+          }
+        }
+        onMounted(init);
+        return { route, loading, error, summary };
       }
-      onMounted(init);
-      return { route, loading, error, summary };
-    }
 
-    const Standing={
-      setup(){ return { ...useTournamentSummary(), badgeClass }; },
-      template:`
+      const Standing = {
+        setup() {
+          return { ...useTournamentSummary(), badgeClass };
+        },
+        template: `
         <div>
           <div v-if="loading" class="text-muted">Cargando standing...</div>
           <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
@@ -294,12 +730,14 @@ const res=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponen
             </div>
           </div>
         </div>
-      `
-    };
+      `,
+      };
 
-    const Metagame={
-      setup(){ return { ...useTournamentSummary(), formatUnixDate }; },
-      template:`
+      const Metagame = {
+        setup() {
+          return { ...useTournamentSummary(), formatUnixDate };
+        },
+        template: `
         <div>
           <div v-if="loading" class="text-muted">Cargando metagame...</div>
           <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
@@ -347,17 +785,19 @@ const res=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponen
             </div>
           </div>
         </div>
-      `
-    };
+      `,
+      };
 
-    const TournamentLayout={
-      components:{RouterLink},
-      setup(){
-        const route=useRoute();
-        const selectedEvent=computed(()=>store.events.find(ev=>ev.tid===route.query.tid) || null);
-        return { route, selectedEvent, formatDateFriendly };
-      },
-      template:`
+      const TournamentLayout = {
+        components: { RouterLink },
+        setup() {
+          const route = useRoute();
+          const selectedEvent = computed(
+            () => store.events.find((ev) => ev.tid === route.query.tid) || null,
+          );
+          return { route, selectedEvent, formatDateFriendly };
+        },
+        template: `
         <div>
           <div class="d-flex align-items-center gap-3 px-3 py-3 border-bottom" style="background: linear-gradient(135deg, #1a3a5c 0%, #1e5080 100%);">
             <div v-if="selectedEvent">
@@ -384,20 +824,33 @@ const res=await fetchWithRetry(`${API_CONFIG.proxyBase}/?tid=${encodeURIComponen
             <router-view></router-view>
           </div>
         </div>
-      `
-    };
+      `,
+      };
 
-    const routes=[
-      { path:'/', component:Home, name:'home' },
-      { path:'/tienda/:id', component:TournamentLayout, children:[
-        { path:'standing', component:Standing, name:'standing' },
-        { path:'metagame', component:Metagame, name:'metagame' },
-        { path:'', redirect: to => ({ name:'standing', params:to.params, query:to.query }) }
-      ] }
-    ];
+      const routes = [
+        { path: "/", component: Home, name: "home" },
+        {
+          path: "/tienda/:id",
+          component: TournamentLayout,
+          children: [
+            { path: "standing", component: Standing, name: "standing" },
+            { path: "metagame", component: Metagame, name: "metagame" },
+            {
+              path: "",
+              redirect: (to) => ({
+                name: "standing",
+                params: to.params,
+                query: to.query,
+              }),
+            },
+          ],
+        },
+      ];
 
-    const router=createRouter({ history:createWebHashHistory(), routes });
-    createApp({ template:'<router-view></router-view>' }).use(router).mount('#app');
-  </script>
-</body>
+      const router = createRouter({ history: createWebHashHistory(), routes });
+      createApp({ template: "<router-view></router-view>" })
+        .use(router)
+        .mount("#app");
+    </script>
+  </body>
 </html>
