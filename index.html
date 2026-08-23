@@ -290,14 +290,14 @@
       >
     </footer>
     <script>
-      const { createApp, ref, computed, onMounted } = Vue;
+      const { createApp, ref, computed, onMounted, watch } = Vue;
       const { createRouter, createWebHashHistory, RouterLink, useRoute } =
         VueRouter;
 
       // DESPUÉS
       // DESPUÉS
       const API_CONFIG = {
-        proxyBase: "https://edh-proxy-topdeck.mac-maxwell.workers.dev",
+        proxyBase: "https://edh-proxy-topdeck-v2.mac-maxwell.workers.dev",
       };
 
       // Overrides manuales para torneos donde la API no trae el commander.
@@ -447,6 +447,32 @@
         return "Decklist no disponible";
       }
 
+      // NUEVO: calcula V/D/E directamente desde rounds/tables (winner_id), sin pegarle a la API por jugador
+      function computeStatsFromRounds(rounds) {
+        const stats = {};
+        function ensure(id) {
+          if (!stats[id])
+            stats[id] = { wins: 0, losses: 0, draws: 0, gamesPlayed: 0 };
+          return stats[id];
+        }
+        (rounds || []).forEach((round) => {
+          (round.tables || []).forEach((table) => {
+            const players = table.players || [];
+            if (players.length < 2) return; // bye o mesa incompleta, no cuenta como partida real
+            if (table.status && table.status !== "Completed") return; // ronda no jugada aún
+            players.forEach((p) => {
+              if (!p.id) return;
+              const s = ensure(p.id);
+              s.gamesPlayed += 1;
+              if (table.winner_id && p.id === table.winner_id) s.wins += 1;
+              else if (!table.winner_id) s.draws += 1; // sin ganador declarado = empate para la mesa
+              else s.losses += 1;
+            });
+          });
+        });
+        return stats;
+      }
+
       // DESPUÉS
       function buildTournamentSummary(payload, tid) {
         const overrides = COMMANDER_OVERRIDES[tid] || {};
@@ -455,10 +481,12 @@
           ? payload.standings
           : [];
         const rounds = Array.isArray(payload?.rounds) ? payload.rounds : [];
+        const roundsStats = computeStatsFromRounds(rounds);
         // DESPUÉS
         const normalizedStandings = standings
           .map((item) => {
             const commanders = getCommanders(item, overrides[item.name]);
+            const fromRounds = roundsStats[item.id];
             return {
               ...item,
               commanders,
@@ -478,6 +506,13 @@
               commanderLabel:
                 commanders.join(" / ") || "Sin comandante detectado",
               deckPreview: deckPreview(item),
+              // NUEVO: V/D/E calculados desde rounds, con fallback a lo que ya viniera en el standing
+              gamesWon: fromRounds ? fromRounds.wins : item.gamesWon,
+              gamesLost: fromRounds ? fromRounds.losses : item.gamesLost,
+              gamesDrawn: fromRounds ? fromRounds.draws : item.gamesDrawn,
+              gamesPlayed: fromRounds
+                ? fromRounds.gamesPlayed
+                : item.gamesPlayed,
             };
           })
           .sort((a, b) => (a.standing ?? 999) - (b.standing ?? 999));
@@ -562,58 +597,40 @@
         return fetch(url); // último intento, se deja pasar el resultado (ok o no)
       }
 
-      async function loadTournamentData(tid) {
-        if (store.tournamentCache[tid]) return store.tournamentCache[tid];
-        store.loadingByTid[tid] = true;
-        store.errorByTid[tid] = "";
-        try {
-          // DESPUÉS
-          const res = await fetchWithRetry(
-            `${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`,
-          );
-          const data = await res.json();
-          if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      // NUEVO: guarda la promesa en curso por tid, así dos llamadas casi simultáneas
+      // (ej. Standing y Metagame montando juntos) reusan la misma request en vez de duplicarla
+      const pendingRequests = {};
 
-          // NUEVO: completar V/D/E reales por jugador (gamesWon/gamesLost/gamesDrawn)
-          // Lotes en paralelo (4 a la vez) en vez de uno por uno, para no ser tan lento
-          if (Array.isArray(data.standings)) {
-            const withId = data.standings.filter((p) => p.id);
-            const BATCH_SIZE = 4;
-            for (let i = 0; i < withId.length; i += BATCH_SIZE) {
-              const batch = withId.slice(i, i + BATCH_SIZE);
-              await Promise.all(
-                batch.map(async (player) => {
-                  try {
-                    const r = await fetchWithRetry(
-                      `${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}&playerId=${encodeURIComponent(player.id)}`,
-                    );
-                    if (r.ok) {
-                      const stats = await r.json();
-                      player.gamesPlayed = stats.gamesPlayed;
-                      player.gamesWon = stats.gamesWon;
-                      player.gamesDrawn = stats.gamesDrawn;
-                      player.gamesLost = stats.gamesLost;
-                    }
-                  } catch (e) {
-                    /* si falla un jugador, seguimos con el resto */
-                  }
-                }),
-              );
-              if (i + BATCH_SIZE < withId.length) {
-                await new Promise((resolve) => setTimeout(resolve, 200));
-              }
-            }
+      function loadTournamentData(tid) {
+        if (store.tournamentCache[tid])
+          return Promise.resolve(store.tournamentCache[tid]);
+        if (pendingRequests[tid]) return pendingRequests[tid];
+
+        const promise = (async () => {
+          store.loadingByTid[tid] = true;
+          store.errorByTid[tid] = "";
+          try {
+            const res = await fetchWithRetry(
+              `${API_CONFIG.proxyBase}/?tid=${encodeURIComponent(tid)}`,
+            );
+            const data = await res.json();
+            if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+            const summary = buildTournamentSummary(data, tid);
+            store.tournamentCache[tid] = summary;
+            return summary;
+          } catch (err) {
+            store.errorByTid[tid] =
+              err.message || "No se pudo cargar el torneo";
+            throw err;
+          } finally {
+            store.loadingByTid[tid] = false;
+            delete pendingRequests[tid];
           }
+        })();
 
-          const summary = buildTournamentSummary(data, tid);
-          store.tournamentCache[tid] = summary;
-          return summary;
-        } catch (err) {
-          store.errorByTid[tid] = err.message || "No se pudo cargar el torneo";
-          throw err;
-        } finally {
-          store.loadingByTid[tid] = false;
-        }
+        pendingRequests[tid] = promise;
+        return promise;
       }
 
       const Home = {
@@ -733,9 +750,78 @@
       `,
       };
 
+      // NUEVO: imágenes de comandantes vía Scryfall API, con caché en localStorage
+      // (mismo patrón que el RCQ Reporter: sin header User-Agent custom, porque rompe CORS)
+      const SCRYFALL_CACHE_KEY = "scryfallCommanderImages";
+      function loadScryfallCache() {
+        try {
+          return JSON.parse(localStorage.getItem(SCRYFALL_CACHE_KEY)) || {};
+        } catch (e) {
+          return {};
+        }
+      }
+      const scryfallCache = loadScryfallCache();
+      function saveScryfallCache() {
+        try {
+          localStorage.setItem(
+            SCRYFALL_CACHE_KEY,
+            JSON.stringify(scryfallCache),
+          );
+        } catch (e) {
+          /* localStorage lleno o bloqueado, seguimos sin cachear */
+        }
+      }
+      async function getCommanderImage(name) {
+        if (!name) return null;
+        if (scryfallCache[name] !== undefined) return scryfallCache[name];
+        try {
+          const res = await fetch(
+            `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`,
+          );
+          if (!res.ok) {
+            scryfallCache[name] = null;
+            saveScryfallCache();
+            return null;
+          }
+          const card = await res.json();
+          const img =
+            card.image_uris?.art_crop ||
+            card.card_faces?.[0]?.image_uris?.art_crop ||
+            null;
+          scryfallCache[name] = img;
+          saveScryfallCache();
+          return img;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      async function loadCommanderImages(metagame, imagesRef) {
+        for (const arch of metagame) {
+          const firstCommander = (arch.name || "").split(" / ")[0];
+          if (
+            !firstCommander ||
+            firstCommander === "Sin comandante detectado" ||
+            imagesRef.value[arch.name]
+          )
+            continue;
+          const img = await getCommanderImage(firstCommander);
+          imagesRef.value = { ...imagesRef.value, [arch.name]: img };
+          await new Promise((resolve) => setTimeout(resolve, 100)); // ritmo prudente para Scryfall
+        }
+      }
+
       const Metagame = {
         setup() {
-          return { ...useTournamentSummary(), formatUnixDate };
+          const base = useTournamentSummary();
+          const commanderImages = ref({});
+          watch(
+            () => base.summary.value,
+            (val) => {
+              if (val?.metagame) loadCommanderImages(val.metagame, commanderImages);
+            },
+          );
+          return { ...base, formatUnixDate, commanderImages };
         },
         template: `
         <div>
@@ -753,6 +839,7 @@
             <div class="row row-cols-2 row-cols-md-4 g-2">
               <div class="col" v-for="arch in summary.metagame" :key="arch.name">
                 <div class="card h-100">
+                  <img v-if="commanderImages[arch.name]" :src="commanderImages[arch.name]" :alt="arch.name" class="card-img-top" style="height:90px;object-fit:cover">
                   <div class="card-body p-2">
                     <div class="d-flex align-items-start gap-1 mb-2">
                       <div class="d-flex flex-wrap gap-1 flex-shrink-0">
