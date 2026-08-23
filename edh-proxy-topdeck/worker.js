@@ -1,5 +1,5 @@
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const ALLOWED_ORIGIN = 'https://mackelf.github.io';
 
@@ -26,6 +26,14 @@ export default {
       ? `https://topdeck.gg/api/v2/tournaments/${tid}/players/${playerId}`
       : `https://topdeck.gg/api/v2/tournaments/${tid}`;
 
+    // NUEVO: cachear respuestas para no volver a pegarle a topdeck.gg en cada carga
+    const cache = caches.default;
+    const cacheKey = new Request(url.toString(), request);
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     // NUEVO: try/catch para que CUALQUIER error (fetch caído, env var faltante, etc.)
     // siempre devuelva corsHeaders en vez de dejar que el Worker reviente sin ellos.
     try {
@@ -44,10 +52,17 @@ export default {
       });
 
       const data = await tdRes.text();
-      return new Response(data, {
+      const response = new Response(data, {
         status: tdRes.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
       });
+
+      // Solo cachea respuestas exitosas, para no guardar errores/rate-limits
+      if (tdRes.status === 200) {
+        ctx.waitUntil(cache.put(cacheKey, response.clone()));
+      }
+
+      return response;
     } catch (err) {
       return new Response(JSON.stringify({ error: 'Error interno del proxy', detail: String(err) }), {
         status: 502,
