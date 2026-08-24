@@ -398,6 +398,18 @@
               "https://topdeck.gg/event/clasificatorio-budget-160-nobundocl",
             social: "https://nobundo.cl/",
           },
+          {
+            tid: "TryHardLab 8vo. Budget 160",
+            store: "TryHard",
+            storeId: "tryhard",
+            city: "Santiago",
+            format: "EDH",
+            idLabel: "TryHardLab 8vo. Budget 160",
+            fecha: "2026-08-22",
+            eventUrl:
+              "https://topdeck.gg/event/tryhard-lab-budget-160-sabado-22-agosto",
+            social: "https://www.instagram.com/tryhardlab/",
+          },
         ],
         tournamentCache: {},
         loadingByTid: {},
@@ -477,7 +489,8 @@
               const s = ensure(p.id);
               s.gamesPlayed += 1;
               if (table.winner_id && p.id === table.winner_id) s.wins += 1;
-              else if (!table.winner_id) s.draws += 1; // sin ganador declarado = empate para la mesa
+              else if (!table.winner_id)
+                s.draws += 1; // sin ganador declarado = empate para la mesa
               else s.losses += 1;
             });
           });
@@ -830,7 +843,8 @@
           watch(
             () => base.summary.value,
             (val) => {
-              if (val?.metagame) loadCommanderImages(val.metagame, commanderImages);
+              if (val?.metagame)
+                loadCommanderImages(val.metagame, commanderImages);
             },
           );
           return { ...base, formatUnixDate, commanderImages };
